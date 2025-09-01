@@ -17,7 +17,7 @@ export interface IDailyTask {
     repetitions?: number;
     sentence?: string;
   };
-  status: 'pending' | 'completed';
+  status: 'pending' | 'in_progress' | 'completed';
   reward: number;
   completedAt: Date | null;
 }

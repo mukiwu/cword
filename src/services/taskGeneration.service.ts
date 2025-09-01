@@ -37,7 +37,7 @@ export class TaskGenerationService {
       let attempts = 0;
       const maxAttempts = 3;
 
-      while (finalTasks.length < 2 && attempts < maxAttempts) {
+      while (finalTasks.length < 3 && attempts < maxAttempts) {
         attempts++;
         console.log(`嘗試生成任務，第 ${attempts} 次嘗試`);
         
@@ -103,6 +103,28 @@ export class TaskGenerationService {
     return await this.getTasksForDate(today);
   }
 
+  static async startTask(taskId: string): Promise<IDailyTask> {
+    const task = await DatabaseService.get<IDailyTask>('dailyTasks', taskId);
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    if (task.status !== 'pending') {
+      return task;
+    }
+
+    const updatedTask: IDailyTask = {
+      ...task,
+      status: 'in_progress',
+    };
+
+    await DatabaseService.update('dailyTasks', taskId, {
+      status: 'in_progress',
+    });
+
+    return updatedTask;
+  }
+
   static async completeTask(taskId: string): Promise<IDailyTask> {
     const task = await DatabaseService.get<IDailyTask>('dailyTasks', taskId);
     if (!task) {
@@ -124,7 +146,7 @@ export class TaskGenerationService {
       completedAt: new Date(),
     });
 
-    // Update weekly ledger
+    // Only update weekly ledger when task is actually completed (not just started)
     await this.updateWeeklyLedger(task.reward, taskId);
 
     return updatedTask;
@@ -188,7 +210,7 @@ export class TaskGenerationService {
     const wordsToUse = unusedWords.length > 0 ? unusedWords : availableWords;
     
     const tasks: IDailyTask[] = [];
-    const selectedWords = wordsToUse.slice(0, 2); // 選擇最多2個字
+    const selectedWords = wordsToUse.slice(0, 3); // 選擇最多3個字
     
     selectedWords.forEach((word, index) => {
       const strokes = this.estimateStrokes(word);

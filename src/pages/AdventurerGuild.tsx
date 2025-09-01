@@ -174,13 +174,23 @@ const AdventurerGuild: React.FC = () => {
     }
   };
 
-  const handleTaskComplete = async (taskId: string) => {
+  const handleTaskInteraction = async (taskId: string) => {
     try {
-      await TaskGenerationService.completeTask(taskId);
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      if (task.status === 'pending') {
+        // 第一次點擊：接受任務 -> 進行中
+        await TaskGenerationService.startTask(taskId);
+      } else if (task.status === 'in_progress') {
+        // 第二次點擊：完成任務 -> 已完成
+        await TaskGenerationService.completeTask(taskId);
+      }
+      
       await loadData(); // Refresh data
     } catch (err) {
-      console.error('Failed to complete task:', err);
-      setError('完成任務失敗，請重試');
+      console.error('Failed to update task:', err);
+      setError('更新任務失敗，請重試');
     }
   };
 
@@ -449,9 +459,19 @@ const AdventurerGuild: React.FC = () => {
                       <button className="w-full bg-green-600 text-white font-bold py-3 rounded-lg cursor-default">
                         ✅ 已完成
                       </button>
+                    ) : task.status === 'in_progress' ? (
+                      <button
+                        onClick={() => handleTaskInteraction(task.id)}
+                        className="w-full bg-orange-600 text-white font-bold py-3 rounded-lg hover:bg-orange-700 transition-colors animate-pulse"
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          <i className="ri-play-circle-line text-xl"></i>
+                          <span>進行中...</span>
+                        </div>
+                      </button>
                     ) : (
                       <button
-                        onClick={() => handleTaskComplete(task.id)}
+                        onClick={() => handleTaskInteraction(task.id)}
                         className="w-full bg-yellow-600 text-white font-bold py-3 rounded-lg hover:cursor-pointer hover:bg-yellow-700 transition-colors"
                       >
                         接受任務
