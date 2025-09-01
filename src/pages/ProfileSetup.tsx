@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { UserProfileService } from '../services/userProfile.service';
 import type { AIModel } from '../types';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // 添加自定義 CSS 樣式 - 使用 Tailwind 3.4.16 的配置和語法

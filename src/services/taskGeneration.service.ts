@@ -212,7 +212,7 @@ export class TaskGenerationService {
     const tasks: IDailyTask[] = [];
     const selectedWords = wordsToUse.slice(0, 3); // 選擇最多3個字
     
-    selectedWords.forEach((word, index) => {
+    selectedWords.forEach((word) => {
       const strokes = this.estimateStrokes(word);
       // 更嚴格的練習次數要求（至少5次）
       const repetitions = Math.max(5, Math.min(10, Math.ceil(strokes / 2)));

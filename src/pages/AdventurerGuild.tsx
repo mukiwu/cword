@@ -6,6 +6,7 @@ import { TaskGenerationService } from '../services/taskGeneration.service';
 import { UserProfileService } from '../services/userProfile.service';
 import { WeeklyLedgerService } from '../services/weeklyLedger.service';
 import ApiConfigModal from '../components/ApiConfigModal';
+import TaskExecutionModal from '../components/TaskExecutionModal';
 
 // 添加自定義 CSS 樣式 - 採用 docs/main.html 的設計風格
 const styles = `
@@ -103,6 +104,8 @@ const AdventurerGuild: React.FC = () => {
   const [error, setError] = useState('');
   const [showApiModal, setShowApiModal] = useState(false);
   const [apiError, setApiError] = useState<AIServiceError | null>(null);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<IDailyTask | null>(null);
 
   useEffect(() => {
     loadData();
@@ -179,26 +182,20 @@ const AdventurerGuild: React.FC = () => {
       const task = tasks.find(t => t.id === taskId);
       if (!task) return;
 
-      let updatedTask: IDailyTask;
-      
       if (task.status === 'pending') {
-        // 第一次點擊：接受任務 -> 進行中
-        updatedTask = await TaskGenerationService.startTask(taskId);
+        // 第一次點擊：接受任務 -> 打開任務執行模態框
+        setSelectedTask(task);
+        setShowTaskModal(true);
       } else if (task.status === 'in_progress') {
         // 第二次點擊：完成任務 -> 已完成
-        updatedTask = await TaskGenerationService.completeTask(taskId);
-      } else {
-        return; // 任務已完成，不需要更新
-      }
+        const updatedTask = await TaskGenerationService.completeTask(taskId);
+        
+        // 只更新特定任務的狀態
+        setTasks(prevTasks => 
+          prevTasks.map(t => t.id === taskId ? updatedTask : t)
+        );
 
-      // 只更新特定任務的狀態，而不是重新載入所有資料
-      setTasks(prevTasks => 
-        prevTasks.map(t => t.id === taskId ? updatedTask : t)
-      );
-
-      // 只在任務完成時更新金幣統計
-      if (updatedTask.status === 'completed') {
-        // 重新計算今日金幣
+        // 更新金幣統計
         const updatedTasks = tasks.map(t => t.id === taskId ? updatedTask : t);
         const completedToday = updatedTasks.filter(task => task.status === 'completed');
         const todaysEarnings = completedToday.reduce((sum, task) => sum + task.reward, 0);
@@ -212,6 +209,45 @@ const AdventurerGuild: React.FC = () => {
     } catch (err) {
       console.error('Failed to update task:', err);
       setError('更新任務失敗，請重試');
+    }
+  };
+
+  const handleTaskModalClose = () => {
+    setShowTaskModal(false);
+    setSelectedTask(null);
+  };
+
+  const handleTaskModalComplete = async () => {
+    if (!selectedTask) return;
+
+    try {
+      // 先將任務標記為進行中，然後立即完成任務
+      await TaskGenerationService.startTask(selectedTask.id);
+      
+      // 立即完成任務
+      const completedTask = await TaskGenerationService.completeTask(selectedTask.id);
+      
+      // 更新任務狀態
+      setTasks(prevTasks => 
+        prevTasks.map(t => t.id === selectedTask.id ? completedTask : t)
+      );
+
+      // 更新金幣統計
+      const updatedTasks = tasks.map(t => t.id === selectedTask.id ? completedTask : t);
+      const completedToday = updatedTasks.filter(task => task.status === 'completed');
+      const todaysEarnings = completedToday.reduce((sum, task) => sum + task.reward, 0);
+      setTodayCoins(todaysEarnings);
+
+      // 更新週總計
+      const weeklyTotal = await WeeklyLedgerService.getCurrentWeekTotal();
+      setWeeklyCoins(weeklyTotal);
+
+      // 關閉模態框
+      handleTaskModalClose();
+      
+    } catch (err) {
+      console.error('Failed to complete task:', err);
+      setError('完成任務失敗，請重試');
     }
   };
 
@@ -543,6 +579,16 @@ const AdventurerGuild: React.FC = () => {
           currentModel={userProfile?.aiModel || 'gemini'}
           error={apiError?.message || ''}
         />
+
+        {/* Task Execution Modal */}
+        {selectedTask && (
+          <TaskExecutionModal
+            task={selectedTask}
+            isOpen={showTaskModal}
+            onClose={handleTaskModalClose}
+            onComplete={handleTaskModalComplete}
+          />
+        )}
       </div>
     </>
   );

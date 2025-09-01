@@ -42,7 +42,7 @@ export class AIService {
   }
 
   private static buildPrompt(request: TaskGenerationRequest): string {
-    const previousTasksList = request.previousTasks.length > 0 
+    const previousTasksList = (request.previousTasks && request.previousTasks.length > 0)
       ? request.previousTasks.join('、') 
       : '無';
     

@@ -158,7 +158,7 @@ const AdventurerCabin: React.FC = () => {
         {/* 柱狀圖 */}
         <div className="relative">
           <div className="flex items-end justify-between gap-2 p-4" style={{ height: `${chartHeight + 40}px` }}>
-            {history.map((week, index) => {
+            {history.map((week) => {
               const barHeight = maxEarned > 0 ? (week.totalEarned / maxEarned) * chartHeight : 0;
               const isCompleted = week.status === 'paid_out';
               
