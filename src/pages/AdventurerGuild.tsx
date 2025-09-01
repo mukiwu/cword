@@ -179,15 +179,36 @@ const AdventurerGuild: React.FC = () => {
       const task = tasks.find(t => t.id === taskId);
       if (!task) return;
 
+      let updatedTask: IDailyTask;
+      
       if (task.status === 'pending') {
         // 第一次點擊：接受任務 -> 進行中
-        await TaskGenerationService.startTask(taskId);
+        updatedTask = await TaskGenerationService.startTask(taskId);
       } else if (task.status === 'in_progress') {
         // 第二次點擊：完成任務 -> 已完成
-        await TaskGenerationService.completeTask(taskId);
+        updatedTask = await TaskGenerationService.completeTask(taskId);
+      } else {
+        return; // 任務已完成，不需要更新
+      }
+
+      // 只更新特定任務的狀態，而不是重新載入所有資料
+      setTasks(prevTasks => 
+        prevTasks.map(t => t.id === taskId ? updatedTask : t)
+      );
+
+      // 只在任務完成時更新金幣統計
+      if (updatedTask.status === 'completed') {
+        // 重新計算今日金幣
+        const updatedTasks = tasks.map(t => t.id === taskId ? updatedTask : t);
+        const completedToday = updatedTasks.filter(task => task.status === 'completed');
+        const todaysEarnings = completedToday.reduce((sum, task) => sum + task.reward, 0);
+        setTodayCoins(todaysEarnings);
+
+        // 更新週總計
+        const weeklyTotal = await WeeklyLedgerService.getCurrentWeekTotal();
+        setWeeklyCoins(weeklyTotal);
       }
       
-      await loadData(); // Refresh data
     } catch (err) {
       console.error('Failed to update task:', err);
       setError('更新任務失敗，請重試');
@@ -311,17 +332,30 @@ const AdventurerGuild: React.FC = () => {
             </h1>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-black bg-opacity-50 rounded-xl px-4 py-2">
+          <div className="flex items-center">
+            <div className="flex items-center bg-black bg-opacity-50 rounded-xl px-4 py-2">
               <div className="w-8 h-8 flex items-center justify-center">
-                <i className="ri-user-line text-white text-xl"></i>
+                <i className="ri-cake-2-line text-white text-xl"></i>
               </div>
-              <span className="text-white font-medium">Lv.{userProfile?.age || '?'}</span>
+              <span className="text-white font-medium">
+                <span className="mr-1 text-4xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+                  {userProfile?.age || '?'}
+                </span>
+              </span>
             </div>
-            <div className="w-12 h-12 bg-yellow-600 rounded-full flex items-center justify-center">
-              <div className="w-6 h-6 flex items-center justify-center">
-                <i className="ri-user-fill text-white text-xl"></i>
-              </div>
+            <div className="w-12 h-12 bg-gray-100 rounded-lg p-1 flex items-center justify-center border-2 border-yellow-600">
+              {userProfile?.avatarId ? (
+                <img 
+                  src={`/cword/src/assets/avatars/${userProfile.avatarId}.svg`} 
+                  alt={`Avatar ${userProfile.avatarId}`}
+                  className="w-full h-full object-contain"
+                  style={{ imageRendering: 'pixelated' }}
+                />
+              ) : (
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <i className="ri-user-fill text-gray-400 text-xl"></i>
+                </div>
+              )}
             </div>
           </div>
         </header>
