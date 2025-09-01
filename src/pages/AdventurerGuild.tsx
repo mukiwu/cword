@@ -7,6 +7,92 @@ import { UserProfileService } from '../services/userProfile.service';
 import { WeeklyLedgerService } from '../services/weeklyLedger.service';
 import ApiConfigModal from '../components/ApiConfigModal';
 
+// 添加自定義 CSS 樣式 - 採用 docs/main.html 的設計風格
+const styles = `
+  .parchment-bg {
+    background: linear-gradient(135deg, #f4f1e8 0%, #e8dcc0 100%);
+    box-shadow: inset 0 0 20px rgba(139, 69, 19, 0.1);
+  }
+
+  .wood-texture {
+    background: linear-gradient(45deg, #8B4513 0%, #A0522D 25%, #8B4513 50%, #A0522D 75%, #8B4513 100%);
+  }
+
+  .coin-glow {
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+  }
+
+  .task-card {
+    background: linear-gradient(135deg, #f9f7f1 0%, #f0ecd9 100%);
+    border: 3px solid #D2691E;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .task-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(139, 69, 19, 0.2);
+  }
+
+  .task-card::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 10px;
+    background: #8B4513;
+    border-radius: 0 0 50% 50%;
+  }
+
+  .guild-badge {
+    background: radial-gradient(circle, #FFD700 0%, #FFA500 100%);
+    border: 3px solid #8B4513;
+  }
+
+  .scroll-bg {
+    background: linear-gradient(90deg, #f4f1e8 0%, #fff8dc 50%, #f4f1e8 100%);
+    border: 2px solid #D2691E;
+    position: relative;
+  }
+
+  .scroll-bg::before,
+  .scroll-bg::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 80%;
+    background: #8B4513;
+    border-radius: 10px;
+  }
+
+  .scroll-bg::before {
+    left: -10px;
+  }
+
+  .scroll-bg::after {
+    right: -10px;
+  }
+
+  .medieval-bg {
+    background: linear-gradient(135deg, 
+      rgba(139, 69, 19, 0.9) 0%, 
+      rgba(160, 82, 45, 0.7) 25%, 
+      rgba(139, 69, 19, 0.9) 50%, 
+      rgba(160, 82, 45, 0.7) 75%, 
+      rgba(139, 69, 19, 0.9) 100%
+    ), 
+    radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 165, 0, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(210, 105, 30, 0.15) 0%, transparent 50%);
+    background-color: #8B4513;
+    min-height: 100vh;
+  }
+`;
+
 const AdventurerGuild: React.FC = () => {
   const [tasks, setTasks] = useState<IDailyTask[]>([]);
   const [userProfile, setUserProfile] = useState<IUserProfile | null>(null);
@@ -129,10 +215,10 @@ const AdventurerGuild: React.FC = () => {
 
   const getTaskIcon = (type: IDailyTask['type']) => {
     switch (type) {
-      case 'character': return '📝';
-      case 'word': return '📚';
-      case 'phrase': return '💭';
-      default: return '📖';
+      case 'character': return 'ri-pencil-line';
+      case 'word': return 'ri-book-open-line';
+      case 'phrase': return 'ri-chat-3-line';
+      default: return 'ri-book-line';
     }
   };
 
@@ -145,148 +231,263 @@ const AdventurerGuild: React.FC = () => {
     }
   };
 
+  const getTaskGradient = (type: IDailyTask['type']) => {
+    switch (type) {
+      case 'character': return 'from-red-400 to-red-600';
+      case 'word': return 'from-blue-400 to-blue-600';
+      case 'phrase': return 'from-green-400 to-green-600';
+      default: return 'from-purple-400 to-purple-600';
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-green-400 to-blue-500 flex items-center justify-center">
-        <div className="text-white text-xl">載入中...</div>
-      </div>
+      <>
+        <style>{styles}</style>
+        <div 
+          className="min-h-screen flex items-center justify-center"
+          style={{
+            backgroundImage: `
+              linear-gradient(
+                rgba(0, 0, 0, 0.4),
+                rgba(0, 0, 0, 0.4)
+              ),
+              url('/cword/bg.jpg')
+            `,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed'
+          }}
+        >
+          <div className="parchment-bg rounded-3xl p-8 text-center">
+            <div className="w-16 h-16 guild-badge rounded-full flex items-center justify-center mx-auto mb-4">
+              <i className="ri-loader-4-line text-2xl text-yellow-800 animate-spin"></i>
+            </div>
+            <div className="text-xl font-bold text-yellow-800">載入中...</div>
+          </div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-400 to-blue-500 p-4">
-      <div className="max-w-4xl mx-auto">
+    <>
+      <style>{styles}</style>
+      <div 
+        className="min-h-screen"
+        style={{
+          fontFamily: "'PingFang TC', 'Microsoft JhengHei', sans-serif",
+          backgroundImage: `
+            linear-gradient(
+              rgba(0, 0, 0, 0.4),
+              rgba(0, 0, 0, 0.4)
+            ),
+            url('/cword/bg.jpg')
+          `,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed'
+        }}
+      >
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">🏛️ 冒險者公會</h1>
-          <p className="text-green-100">歡迎回來，{userProfile?.name || '冒險者'}！</p>
-        </div>
-
-        {/* Coins Dashboard */}
-        <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mb-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-300">🪙 {todayCoins}</div>
-              <div className="text-green-100">今日學習幣</div>
+        <header className="flex justify-between items-center p-6">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 guild-badge rounded-full flex items-center justify-center">
+              <span className="font-['Pacifico'] text-yellow-800 text-xl font-bold">🏛️</span>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-yellow-300">🏆 {weeklyCoins}</div>
-              <div className="text-green-100">本週學習幣</div>
+            <h1 className="text-4xl font-bold text-white drop-shadow-lg">
+              冒險者公會
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-black bg-opacity-50 rounded-xl px-4 py-2">
+              <div className="w-8 h-8 flex items-center justify-center">
+                <i className="ri-user-line text-white text-xl"></i>
+              </div>
+              <span className="text-white font-medium">Lv.{userProfile?.age || '?'}</span>
+            </div>
+            <div className="w-12 h-12 bg-yellow-600 rounded-full flex items-center justify-center">
+              <div className="w-6 h-6 flex items-center justify-center">
+                <i className="ri-user-fill text-white text-xl"></i>
+              </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-500/20 border border-red-500 text-white p-4 rounded-lg mb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">{error}</p>
-                {apiError && (
-                  <p className="text-sm mt-1 opacity-75">
-                    錯誤類型：{apiError.type === 'AUTH_ERROR' ? 'API 認證問題' : 
-                              apiError.type === 'RATE_LIMIT' ? 'API 請求限制' : 
-                              apiError.type === 'NETWORK_ERROR' ? '網路連線問題' : '未知錯誤'}
-                  </p>
-                )}
+        <div className="px-6 pb-6">
+          {/* Welcome Message */}
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-white drop-shadow-lg mb-2">
+              嗨，{userProfile?.name || '冒險者'}！
+            </h2>
+            <p className="text-white text-lg opacity-90">
+              準備好迎接今日的挑戰了嗎？
+            </p>
+          </div>
+
+          {/* Coins Dashboard */}
+          <div className="scroll-bg rounded-2xl p-6 mb-8 mx-auto max-w-4xl">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 coin-glow bg-yellow-400 rounded-full flex items-center justify-center">
+                  <i className="ri-coin-fill text-yellow-800 text-xl"></i>
+                </div>
+                <div>
+                  <p className="text-yellow-800 font-bold text-lg">今日獲得</p>
+                  <p className="text-2xl font-bold text-yellow-600">{todayCoins} 學習幣</p>
+                </div>
               </div>
-              <div className="flex gap-2">
-                {apiError && (apiError.type === 'AUTH_ERROR' || apiError.type === 'NETWORK_ERROR' || apiError.type === 'UNKNOWN') && (
+
+              <div className="w-px h-16 bg-yellow-600 opacity-30"></div>
+
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-yellow-600 rounded-full flex items-center justify-center">
+                  <i className="ri-treasure-map-fill text-white text-xl"></i>
+                </div>
+                <div>
+                  <p className="text-yellow-800 font-bold text-lg">本週累計</p>
+                  <p className="text-2xl font-bold text-yellow-600">{weeklyCoins} 學習幣</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="parchment-bg rounded-2xl p-6 mb-8 mx-auto max-w-4xl border-2 border-red-600">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-red-700 text-lg">{error}</p>
+                  {apiError && (
+                    <p className="text-sm mt-1 text-red-600">
+                      錯誤類型：{apiError.type === 'AUTH_ERROR' ? 'API 認證問題' : 
+                                apiError.type === 'RATE_LIMIT' ? 'API 請求限制' : 
+                                apiError.type === 'NETWORK_ERROR' ? '網路連線問題' : '未知錯誤'}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  {apiError && (apiError.type === 'AUTH_ERROR' || apiError.type === 'NETWORK_ERROR' || apiError.type === 'UNKNOWN') && (
+                    <button
+                      onClick={() => setShowApiModal(true)}
+                      className="bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-yellow-700 transition-colors"
+                    >
+                      重新設定 API
+                    </button>
+                  )}
                   <button
-                    onClick={() => setShowApiModal(true)}
-                    className="bg-yellow-600 text-white px-3 py-1 rounded text-sm hover:bg-yellow-700"
+                    onClick={handleRetry}
+                    className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    重新設定 API
+                    重試
                   </button>
-                )}
-                <button
-                  onClick={handleRetry}
-                  className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
-                >
-                  重試
-                </button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Tasks */}
-        <div className="space-y-4 mb-6">
-          <h2 className="text-2xl font-bold text-white">📋 今日任務</h2>
-          
-          {tasks.length === 0 ? (
-            <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 text-center text-white">
-              今日暫無任務，請檢查網路連線或稍後再試
+          {/* Tasks Section */}
+          <div className="max-w-6xl mx-auto">
+            <div className="wood-texture rounded-2xl p-6 mb-6">
+              <h3 className="text-2xl font-bold text-white text-center drop-shadow-lg">
+                📋 今日任務布告欄
+              </h3>
             </div>
-          ) : (
-            tasks.map(task => (
-              <div
-                key={task.id}
-                className={`bg-white/10 backdrop-blur-md rounded-lg p-4 border-l-4 ${
-                  task.status === 'completed' 
-                    ? 'border-green-400 bg-green-500/20' 
-                    : 'border-yellow-400'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-2xl">{getTaskIcon(task.type)}</span>
-                      <div>
-                        <h3 className="font-bold text-white">{getTaskTypeText(task.type)}</h3>
-                        <p className="text-green-100 text-sm">學習內容：{task.content}</p>
+
+            {tasks.length === 0 ? (
+              <div className="task-card rounded-2xl p-6 text-center">
+                <div className="text-yellow-800 text-lg font-medium">
+                  今日暫無任務，請檢查網路連線或稍後再試
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {tasks.map(task => (
+                  <div key={task.id} className="task-card rounded-2xl p-6">
+                    <div className="text-center mb-4">
+                      <div className="flex items-center justify-center mb-3">
+                        <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${getTaskGradient(task.type)} flex items-center justify-center`}>
+                          <i className={`${getTaskIcon(task.type)} text-white text-2xl`}></i>
+                        </div>
+                      </div>
+                      <h4 className="text-xl font-bold text-yellow-800 mb-2">
+                        {getTaskTypeText(task.type)}
+                      </h4>
+                      <div className="bg-yellow-600 bg-opacity-20 rounded-lg p-3 mb-4">
+                        <p className="text-sm text-yellow-800 font-medium mb-1">學習內容</p>
+                        <p className="font-bold text-lg text-yellow-700">
+                          {task.content}
+                        </p>
+                        {task.details.sentence && (
+                          <p className="text-sm text-yellow-600 mt-1">
+                            造句：{task.details.sentence}
+                          </p>
+                        )}
                       </div>
                     </div>
                     
-                    <div className="text-green-100 text-sm">
-                      {task.details.strokes && `筆劃：${task.details.strokes} `}
-                      {task.details.repetitions && `練習：${task.details.repetitions} 次 `}
-                      {task.details.sentence && `造句：${task.details.sentence}`}
-                    </div>
-                  </div>
-                  
-                  <div className="text-right">
-                    <div className="text-yellow-300 font-bold mb-2">
-                      +{task.reward} 🪙
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 flex items-center justify-center">
+                          <i className="ri-coin-fill text-yellow-500 text-lg"></i>
+                        </div>
+                        <span className="text-yellow-800 font-medium">+{task.reward} 學習幣</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-4 h-4 flex items-center justify-center">
+                          <i className="ri-time-line text-yellow-800"></i>
+                        </div>
+                        <span className="text-sm text-yellow-800">
+                          {task.details.repetitions ? `${task.details.repetitions} 次` : '15 分鐘'}
+                        </span>
+                      </div>
                     </div>
                     
                     {task.status === 'completed' ? (
-                      <div className="text-green-300 font-bold">✅ 已完成</div>
+                      <button className="w-full bg-green-600 text-white font-bold py-3 rounded-lg cursor-default">
+                        ✅ 已完成
+                      </button>
                     ) : (
                       <button
                         onClick={() => handleTaskComplete(task.id)}
-                        className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 font-medium"
+                        className="w-full bg-yellow-600 text-white font-bold py-3 rounded-lg hover:bg-yellow-700 transition-colors"
                       >
-                        開始任務
+                        接受任務
                       </button>
                     )}
                   </div>
-                </div>
+                ))}
               </div>
-            ))
-          )}
+            )}
+          </div>
         </div>
 
-        {/* Navigation */}
-        <div className="text-center">
+        {/* Floating Navigation Button */}
+        <div className="fixed bottom-6 right-6 group">
           <Link
             to="/cabin"
-            className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 font-medium"
+            className="w-16 h-16 bg-yellow-600 hover:bg-yellow-700 transition-colors rounded-full shadow-lg flex items-center justify-center"
           >
-            🏠 前往冒險者小屋
+            <div className="w-8 h-8 flex items-center justify-center">
+              <i className="ri-home-4-fill text-white text-2xl"></i>
+            </div>
           </Link>
+          <div className="absolute bottom-20 right-0 bg-black bg-opacity-75 text-white px-3 py-1 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            冒險者小屋
+          </div>
         </div>
-      </div>
 
-      {/* API Config Modal */}
-      <ApiConfigModal
-        isOpen={showApiModal}
-        onClose={() => setShowApiModal(false)}
-        onSave={handleApiConfigSave}
-        currentModel={userProfile?.aiModel || 'gemini'}
-        error={apiError?.message || ''}
-      />
-    </div>
+        {/* API Config Modal */}
+        <ApiConfigModal
+          isOpen={showApiModal}
+          onClose={() => setShowApiModal(false)}
+          onSave={handleApiConfigSave}
+          currentModel={userProfile?.aiModel || 'gemini'}
+          error={apiError?.message || ''}
+        />
+      </div>
+    </>
   );
 };
 

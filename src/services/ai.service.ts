@@ -42,31 +42,48 @@ export class AIService {
   }
 
   private static buildPrompt(request: TaskGenerationRequest): string {
+    const previousTasksList = request.previousTasks.length > 0 
+      ? request.previousTasks.join('、') 
+      : '無';
+    
     return `
 請為國小${request.grade}年級學生（${request.userAge}歲）生成今日的中文學習任務。
 
-要求：
-1. 生成2-3個任務，包含單字和單詞練習
-2. 根據年級選擇適當難度的字詞
+**重要約束條件：**
+🚫 **絕對不可使用以下已學過的字詞：** ${previousTasksList}
+
+**任務生成要求：**
+1. 生成2-3個**全新的**任務，包含單字和單詞練習
+2. 根據年級選擇適當難度的字詞，但必須是**從未出現過**的內容
 3. 每個任務包含：
-   - content: 要學習的字或詞
+   - content: 要學習的字或詞（必須與已學內容不同）
    - type: "character"(單字) | "word"(單詞) | "phrase"(詞語應用)
    - details: 包含筆劃數、練習次數或造句要求
    - reward: 根據難度計算的學習幣獎勵
 
-獎勵計算規則：
+**獎勵計算規則：**
 - 單字：5 + 難度加成(6-10劃+1, 11-15劃+2, 16+劃+3) + 次數加成(3-5次+1, 6-10次+2)，上限10
 - 單詞應用：固定7學習幣
 - 單詞書寫：6 + 次數加成
+
+**年級${request.grade}適合的字詞範圍：**
+${request.grade <= 2 ? '基礎常用字：如象形字、簡單合成字' : 
+  request.grade <= 4 ? '進階常用字：包含部首變化、多音字' : 
+  '高級字詞：包含成語、古文用字、專業詞彙'}
+
+**驗證步驟：**
+1. 檢查生成的每個字/詞是否出現在禁用列表中
+2. 如果有重複，請立即替換為其他適合的字詞
+3. 確保最終結果完全避開已學過的內容
 
 請回傳JSON格式：
 {
   "tasks": [
     {
-      "content": "天",
-      "type": "character",
-      "details": {"strokes": 4, "repetitions": 5},
-      "reward": 6
+      "content": "海",
+      "type": "character", 
+      "details": {"strokes": 10, "repetitions": 4},
+      "reward": 7
     }
   ]
 }
