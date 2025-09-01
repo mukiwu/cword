@@ -461,12 +461,12 @@ const AdventurerGuild: React.FC = () => {
                       </h4>
                       <div className="bg-yellow-600 rounded-lg p-3 mb-4">
                         <p className="text-sm text-white font-medium mb-1">學習內容</p>
-                        <p className="font-bold text-lg text-white">
+                        <p className="text-3xl text-white">
                           {task.content}
                         </p>
                         {task.details.sentence && (
-                          <p className="text-sm text-yellow-600 mt-1">
-                            造句：{task.details.sentence}
+                          <p className="text-sm text-black mt-1">
+                            請用「{task.content}」造一個完整的句子
                           </p>
                         )}
                       </div>
@@ -479,14 +479,16 @@ const AdventurerGuild: React.FC = () => {
                         </div>
                         <span className="text-yellow-800 font-medium">+{task.reward} 學習幣</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-4 h-4 flex items-center justify-center">
-                          <i className="ri-time-line text-yellow-800"></i>
+                      {task.details.repetitions && (
+                        <div className="flex items-center gap-1">
+                          <div className="w-4 h-4 flex items-center justify-center">
+                            <i className="ri-time-line text-yellow-800"></i>
+                          </div>
+                          <span className="text-sm text-yellow-800">
+                            {task.details.repetitions} 次
+                          </span>
                         </div>
-                        <span className="text-sm text-yellow-800">
-                          {task.details.repetitions ? `${task.details.repetitions} 次` : '15 分鐘'}
-                        </span>
-                      </div>
+                      )}
                     </div>
                     
                     {task.status === 'completed' ? (

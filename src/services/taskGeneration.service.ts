@@ -193,14 +193,14 @@ export class TaskGenerationService {
     const historicalContents = await this.getAllHistoricalContents();
     const usedSet = new Set(historicalContents);
     
-    // 依年級準備不同難度的備用字詞
+    // 依年級準備更具挑戰性的備用字詞（提升難度）
     const fallbackWords: Record<number, string[]> = {
-      1: ['人', '大', '小', '山', '水', '火', '木', '土', '日', '月'],
-      2: ['家', '學', '校', '老', '師', '同', '學', '書', '本', '字'],
-      3: ['朋', '友', '快', '樂', '學', '習', '努', '力', '進', '步'],
-      4: ['知', '識', '智', '慧', '思', '考', '問', '題', '答', '案'],
-      5: ['經', '驗', '學', '問', '研', '究', '發', '現', '創', '新'],
-      6: ['哲', '學', '科', '學', '文', '學', '歷', '史', '地', '理']
+      1: ['春', '夏', '秋', '冬', '花', '草', '樹', '鳥', '雲', '雨'],
+      2: ['聰', '明', '勇', '敢', '溫', '暖', '清', '楚', '美', '麗'], // 8歲更具挑戰性
+      3: ['智', '慧', '堅', '強', '優', '秀', '認', '真', '負', '責'],
+      4: ['創', '造', '發', '展', '進', '步', '成', '功', '夢', '想'],
+      5: ['哲', '學', '科', '技', '文', '化', '藝', '術', '歷', '史'],
+      6: ['邏', '輯', '思', '維', '創', '新', '探', '索', '研', '究']
     };
     
     const availableWords = fallbackWords[grade] || fallbackWords[3];
@@ -214,7 +214,23 @@ export class TaskGenerationService {
     
     selectedWords.forEach((word, index) => {
       const strokes = this.estimateStrokes(word);
-      const repetitions = Math.min(Math.max(3, 8 - strokes), 8);
+      // 更嚴格的練習次數要求（至少5次）
+      const repetitions = Math.max(5, Math.min(10, Math.ceil(strokes / 2)));
+      
+      // 使用新的獎勵計算標準：3 + 難度加成 + 次數加成，上限8
+      let reward = 3; // 基礎獎勵
+      
+      // 難度加成（8-12劃+1, 13-16劃+2, 17+劃+3）
+      if (strokes >= 17) reward += 3;
+      else if (strokes >= 13) reward += 2;
+      else if (strokes >= 8) reward += 1;
+      
+      // 次數加成（5-7次+1, 8-10次+2）
+      if (repetitions >= 8) reward += 2;
+      else if (repetitions >= 5) reward += 1;
+      
+      // 上限8學習幣
+      reward = Math.min(reward, 8);
       
       tasks.push({
         id: uuidv4(),
@@ -223,7 +239,7 @@ export class TaskGenerationService {
         type: 'character',
         details: { strokes, repetitions },
         status: 'pending',
-        reward: 5 + Math.floor(strokes / 5) + Math.floor(repetitions / 3),
+        reward,
         completedAt: null,
       });
     });
@@ -231,18 +247,32 @@ export class TaskGenerationService {
     return tasks;
   }
 
-  // 新增：估算字的筆劃數
+  // 新增：估算字的筆劃數（擴展更多較難字詞）
   private static estimateStrokes(char: string): number {
-    // 這裡可以擴展為更精確的筆劃數計算
     const strokeMap: Record<string, number> = {
+      // 基礎字
       '人': 2, '大': 3, '小': 3, '山': 3, '水': 4, '火': 4,
-      '木': 4, '土': 3, '日': 4, '月': 4, '家': 10, '學': 8,
-      '校': 10, '老': 6, '師': 10, '同': 6, '書': 10, '本': 5,
-      '字': 6, '朋': 8, '友': 4, '快': 7, '樂': 15, '習': 11,
-      '努': 7, '力': 2, '進': 11, '步': 7
+      '木': 4, '土': 3, '日': 4, '月': 4, '春': 9, '夏': 10,
+      '秋': 9, '冬': 5, '花': 7, '草': 9, '樹': 16, '鳥': 11,
+      '雲': 12, '雨': 8,
+      
+      // 二年級較難字詞（8歲）
+      '聰': 17, '明': 8, '勇': 9, '敢': 11, '溫': 12, '暖': 13,
+      '清': 11, '楚': 13, '美': 9, '麗': 19,
+      
+      // 中年級字詞
+      '智': 12, '慧': 15, '堅': 11, '強': 12, '優': 17, '秀': 7,
+      '認': 14, '真': 10, '負': 9, '責': 11,
+      
+      // 高年級字詞
+      '創': 12, '造': 10, '發': 12, '展': 10, '進': 11, '步': 7,
+      '成': 6, '功': 5, '夢': 13, '想': 13, '哲': 10, '科': 9,
+      '技': 7, '文': 4, '化': 4, '藝': 13, '術': 11, '歷': 16,
+      '史': 5, '邏': 17, '輯': 14, '思': 9, '維': 14, '新': 13,
+      '探': 11, '索': 10, '研': 9, '究': 7
     };
     
-    return strokeMap[char] || 8; // 默認8劃
+    return strokeMap[char] || 10; // 默認提升至10劃
   }
 
   private static async updateWeeklyLedger(reward: number, taskId: string): Promise<void> {
