@@ -1,0 +1,34 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- 像素風格魔法師頭像 -->
+  <!-- 帽子 -->
+  <rect x="20" y="4" width="24" height="4" fill="#4B0082"/>
+  <rect x="16" y="8" width="32" height="8" fill="#8A2BE2"/>
+  <rect x="20" y="12" width="24" height="4" fill="#9370DB"/>
+  
+  <!-- 臉部 -->
+  <rect x="20" y="16" width="24" height="16" fill="#FDBCB4"/>
+  
+  <!-- 眼睛 -->
+  <rect x="24" y="20" width="4" height="4" fill="#4169E1"/>
+  <rect x="36" y="20" width="4" height="4" fill="#4169E1"/>
+  
+  <!-- 鼻子 -->
+  <rect x="30" y="24" width="4" height="4" fill="#F4A085"/>
+  
+  <!-- 嘴巴 -->
+  <rect x="28" y="28" width="8" height="2" fill="#8B0000"/>
+  
+  <!-- 長袍 -->
+  <rect x="16" y="32" width="32" height="24" fill="#483D8B"/>
+  <rect x="20" y="36" width="24" height="4" fill="#6A5ACD"/>
+  
+  <!-- 法杖 -->
+  <rect x="52" y="8" width="4" height="32" fill="#8B4513"/>
+  <rect x="48" y="4" width="12" height="8" fill="#FFD700"/>
+  <rect x="50" y="6" width="8" height="4" fill="#FF69B4"/>
+  
+  <!-- 魔法光環 -->
+  <rect x="12" y="12" width="4" height="4" fill="#00FFFF"/>
+  <rect x="48" y="16" width="4" height="4" fill="#00FF00"/>
+  <rect x="8" y="24" width="4" height="4" fill="#FF00FF"/>
+</svg>

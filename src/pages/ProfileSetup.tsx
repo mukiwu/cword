@@ -140,49 +140,43 @@ const ProfileSetup: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // 頭像選項定義 - 與 mockup 完全一致
+  // 頭像選項定義 - 像素風格職業頭像
   const avatars = [
     { 
       id: 'warrior', 
       name: '勇敢戰士', 
       description: '勇敢無畏',
-      icon: 'ri-sword-line',
-      gradient: 'from-red-400 to-red-600'
+      svgPath: '/cword/src/assets/avatars/warrior.svg'
     },
     { 
       id: 'mage', 
       name: '聰明魔法師', 
       description: '智慧過人',
-      icon: 'ri-magic-line',
-      gradient: 'from-purple-400 to-purple-600'
+      svgPath: '/cword/src/assets/avatars/mage.svg'
     },
     { 
       id: 'archer', 
       name: '神射手', 
       description: '百發百中',
-      icon: 'ri-focus-3-line',
-      gradient: 'from-green-400 to-green-600'
+      svgPath: '/cword/src/assets/avatars/archer.svg'
     },
     { 
       id: 'healer', 
       name: '治療師', 
       description: '溫柔善良',
-      icon: 'ri-heart-pulse-line',
-      gradient: 'from-pink-400 to-pink-600'
+      svgPath: '/cword/src/assets/avatars/healer.svg'
     },
     { 
       id: 'explorer', 
       name: '探險家', 
       description: '好奇心強',
-      icon: 'ri-compass-3-line',
-      gradient: 'from-orange-400 to-orange-600'
+      svgPath: '/cword/src/assets/avatars/explorer.svg'
     },
     { 
       id: 'scholar', 
       name: '學者', 
       description: '博學多聞',
-      icon: 'ri-book-open-line',
-      gradient: 'from-blue-400 to-blue-600'
+      svgPath: '/cword/src/assets/avatars/scholar.svg'
     },
   ];
 
@@ -316,8 +310,13 @@ const ProfileSetup: React.FC = () => {
                       }`}
                       onClick={() => setFormData(prev => ({ ...prev, avatarId: avatar.id }))}
                     >
-                      <div className={`w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br ${avatar.gradient} flex items-center justify-center`}>
-                        <i className={`${avatar.icon} text-white text-2xl`}></i>
+                      <div className="w-16 h-16 mx-auto mb-2 rounded-lg bg-gray-100 p-1 flex items-center justify-center">
+                        <img 
+                          src={avatar.svgPath} 
+                          alt={avatar.name}
+                          className="w-full h-full object-contain"
+                          style={{ imageRendering: 'pixelated' }}
+                        />
                       </div>
                       <h4 className="font-semibold text-gray-800 text-sm">{avatar.name}</h4>
                       <p className="text-xs text-gray-600">{avatar.description}</p>

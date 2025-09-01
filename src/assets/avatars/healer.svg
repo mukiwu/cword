@@ -1,0 +1,37 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- 像素風格治療師頭像 -->
+  <!-- 帽子/頭髮 -->
+  <rect x="20" y="8" width="24" height="8" fill="#FFFFFF"/>
+  <rect x="18" y="12" width="28" height="4" fill="#F5F5DC"/>
+  
+  <!-- 臉部 -->
+  <rect x="20" y="16" width="24" height="16" fill="#FDBCB4"/>
+  
+  <!-- 眼睛 -->
+  <rect x="24" y="20" width="4" height="4" fill="#87CEEB"/>
+  <rect x="36" y="20" width="4" height="4" fill="#87CEEB"/>
+  
+  <!-- 鼻子 -->
+  <rect x="30" y="24" width="4" height="4" fill="#F4A085"/>
+  
+  <!-- 嘴巴 -->
+  <rect x="28" y="28" width="8" height="2" fill="#DC143C"/>
+  
+  <!-- 白色長袍 -->
+  <rect x="16" y="32" width="32" height="24" fill="#FFFFFF"/>
+  <rect x="20" y="36" width="24" height="4" fill="#F0F8FF"/>
+  
+  <!-- 紅十字標記 -->
+  <rect x="30" y="40" width="4" height="12" fill="#DC143C"/>
+  <rect x="26" y="44" width="12" height="4" fill="#DC143C"/>
+  
+  <!-- 法杖 -->
+  <rect x="52" y="12" width="4" height="28" fill="#FFFFFF"/>
+  <rect x="48" y="8" width="12" height="8" fill="#FFD700"/>
+  <rect x="50" y="4" width="8" height="8" fill="#FF69B4"/>
+  
+  <!-- 治療光環 -->
+  <rect x="8" y="16" width="4" height="4" fill="#98FB98"/>
+  <rect x="12" y="20" width="4" height="4" fill="#90EE90"/>
+  <rect x="48" y="24" width="4" height="4" fill="#98FB98"/>
+</svg>
