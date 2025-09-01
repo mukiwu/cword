@@ -27,6 +27,7 @@ const styles = `
     border: 3px solid #D2691E;
     position: relative;
     transition: all 0.3s ease;
+    opacity: 0.8;
   }
 
   .task-card:hover {
@@ -327,7 +328,7 @@ const AdventurerGuild: React.FC = () => {
           </div>
 
           {/* Coins Dashboard */}
-          <div className="scroll-bg rounded-2xl p-6 mb-8 mx-auto max-w-4xl">
+          <div className="scroll-bg rounded-2xl p-6 mb-8 mx-auto max-w-4xl opacity-80">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 coin-glow bg-yellow-400 rounded-full flex items-center justify-center">
@@ -414,9 +415,9 @@ const AdventurerGuild: React.FC = () => {
                       <h4 className="text-xl font-bold text-yellow-800 mb-2">
                         {getTaskTypeText(task.type)}
                       </h4>
-                      <div className="bg-yellow-600 bg-opacity-20 rounded-lg p-3 mb-4">
-                        <p className="text-sm text-yellow-800 font-medium mb-1">學習內容</p>
-                        <p className="font-bold text-lg text-yellow-700">
+                      <div className="bg-yellow-600 rounded-lg p-3 mb-4">
+                        <p className="text-sm text-white font-medium mb-1">學習內容</p>
+                        <p className="font-bold text-lg text-white">
                           {task.content}
                         </p>
                         {task.details.sentence && (
@@ -451,7 +452,7 @@ const AdventurerGuild: React.FC = () => {
                     ) : (
                       <button
                         onClick={() => handleTaskComplete(task.id)}
-                        className="w-full bg-yellow-600 text-white font-bold py-3 rounded-lg hover:bg-yellow-700 transition-colors"
+                        className="w-full bg-yellow-600 text-white font-bold py-3 rounded-lg hover:cursor-pointer hover:bg-yellow-700 transition-colors"
                       >
                         接受任務
                       </button>
