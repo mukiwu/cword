@@ -93,7 +93,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
     }
   }, [task.content]);
 
-  // 使用 Hanzi Writer 初始化字符
+  // 使用 Hanzi Writer 初始化單字
   useEffect(() => {
     if (isOpen && (task.type === 'character' || task.type === 'word')) {
       // 延遲初始化，確保 DOM 完全渲染
@@ -121,7 +121,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
 
   const initializeHanziWriters = async () => {
     try {
-      // 獲取所有字符
+      // 獲取所有單字
       const characters = Array.from(task.content);
       console.log('Initializing writers for characters:', characters);
       
@@ -147,7 +147,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
       const newWriters: any[] = new Array(characters.length).fill(null);
       const newTotalStrokes: number[] = new Array(characters.length).fill(1);
       
-      // 為每個字符創建 writer
+      // 為每個單字創建 writer
       for (let i = 0; i < characters.length; i++) {
         const char = characters[i];
         const container = writerRefs.current[i];
@@ -162,7 +162,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
         
         try {
           const writer = HanziWriter.create(container, char, {
-            width: 280,  // 稍微縮小以適應多個字符
+            width: 280,  // 稍微縮小以適應多個單字
             height: 280,
             padding: 15,
             strokeAnimationSpeed: 1,
@@ -182,17 +182,22 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                 }
                 const data = await response.json();
                 
-                // 設置這個字符的筆劃數
+                // 設置這個單字的筆劃數並立即更新狀態
                 if (data && data.strokes) {
                   newTotalStrokes[i] = data.strokes.length;
+                  console.log(`Character ${character} has ${data.strokes.length} strokes`);
                 } else {
                   newTotalStrokes[i] = 1;
                 }
+                
+                // 立即更新 totalStrokes 狀態以確保 UI 顯示正確
+                setTotalStrokes([...newTotalStrokes]);
                 
                 return data;
               } catch (error) {
                 console.error(`Failed to load character data for ${character}:`, error);
                 newTotalStrokes[i] = 1; // 設置默認值
+                setTotalStrokes([...newTotalStrokes]);
                 throw error;
               }
             }
@@ -203,13 +208,13 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
           
         } catch (error) {
           console.error(`Error creating writer for character ${char}:`, error);
-          setLoadingError(`初始化字符「${char}」失敗`);
+          setLoadingError(`初始化單字「${char}」失敗`);
           newWriters[i] = null; // 設置為 null 以保持陣列索引一致
           newTotalStrokes[i] = 1; // 設置默認值
         }
       }
       
-      // 等待所有字符數據加載完成
+      // 等待所有單字數據加載完成
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // 不要過濾陣列，保持索引對應關係
@@ -229,17 +234,6 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
     }
   };
 
-  const getCharacterMeaning = (character: string) => {
-    const meanings: { [key: string]: string } = {
-      '聰': '聽覺敏銳，智慧聰穎的意思',
-      '明': '光亮、清楚的意思，也指聰明',
-      '美': '漂亮、好看的意思',
-      '麗': '美麗、漂亮的意思',
-      '勇': '勇敢、不害怕的意思',
-      '敢': '有勇氣做某事的意思',
-    };
-    return meanings[character] || '這是一個很有意義的字';
-  };
 
   const handleAnimateCharacter = (charIndex?: number) => {
     const targetIndex = charIndex ?? currentCharIndex;
@@ -332,14 +326,14 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
         currentWriter.animateStroke(currentStep, {
           onComplete: () => {
             if (currentStep < currentCharStrokes - 1) {
-              // 當前字符還有下一筆
+              // 當前單字還有下一筆
               setCurrentStep(currentStep + 1);
             } else if (currentCharIndex < writers.length - 1) {
-              // 當前字符完成，移到下一個字符
+              // 當前單字完成，移到下一個單字
               setCurrentCharIndex(currentCharIndex + 1);
               setCurrentStep(0);
             } else {
-              // 所有字符完成
+              // 所有單字完成
               setTimeout(() => {
                 onComplete();
               }, 1000);
@@ -357,7 +351,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
 
   const handleStepPrev = () => {
     if (currentStep > 0) {
-      // 當前字符的上一筆
+      // 當前單字的上一筆
       const newStep = currentStep - 1;
       setCurrentStep(newStep);
       const currentWriter = writers[currentCharIndex];
@@ -368,7 +362,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
         }
       }
     } else if (currentCharIndex > 0) {
-      // 上一個字符的最後一筆
+      // 上一個單字的最後一筆
       const newCharIndex = currentCharIndex - 1;
       const newStep = (totalStrokes[newCharIndex] || 1) - 1;
       setCurrentCharIndex(newCharIndex);
@@ -446,19 +440,6 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
             </button>
           </div>
 
-          {/* Character Introduction */}
-          <div className="mb-8 text-center">
-            <div className="mb-4">
-              <div className="character-display mb-3">{task.content}</div>
-              <p className="text-yellow-700 text-lg">
-                {getCharacterMeaning(task.content)}
-              </p>
-              <p className="text-yellow-600 text-sm mt-2">
-                筆劃數：{task.details.strokes || '未知'} 劃
-              </p>
-            </div>
-          </div>
-
           {/* Hanzi Writer Animation for Character and Word Practice */}
           {(task.type === 'character' || task.type === 'word') && (
             <div className="mb-8">
@@ -469,7 +450,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                 <div className={`flex gap-6 ${task.type === 'word' ? 'flex-wrap justify-center' : ''}`}>
                   {Array.from(task.content).map((char, index) => (
                     <div key={index} className="relative">
-                      {/* 字符標題 */}
+                      {/* 單字標題 */}
                       {task.type === 'word' && (
                         <div 
                           className="text-center mb-2 cursor-pointer hover:bg-yellow-100 rounded-lg p-2 transition-colors"
@@ -481,7 +462,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                             {char}
                           </span>
                           <div className="text-sm text-yellow-600">
-                            {index === currentCharIndex ? '(當前字符)' : '點擊選擇'}
+                            {index === currentCharIndex ? '(當前單字)' : '點擊選擇'}
                           </div>
                         </div>
                       )}
@@ -609,56 +590,12 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                 </button>
               </div>
               
-              {/* 單詞學習的字符選擇器 */}
-              {task.type === 'word' && (
-                <div className="text-center mb-4">
-                  <div className="inline-flex bg-yellow-100 rounded-lg p-1">
-                    {Array.from(task.content).map((char, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleSelectCharacter(index)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                          index === currentCharIndex
-                            ? 'bg-orange-500 text-white shadow-md'
-                            : 'text-yellow-700 hover:bg-yellow-200'
-                        }`}
-                      >
-                        {char}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-xs text-yellow-600 mt-2">
-                    點擊字符切換練習對象
-                  </p>
-                </div>
-              )}
-              
               <p className="text-center text-yellow-600 text-sm">
                 {task.type === 'word' 
                   ? `正在學習「${Array.from(task.content)[currentCharIndex]}」的筆順` 
                   : '觀察筆順動畫，學習正確的書寫順序'
                 }
               </p>
-            </div>
-          )}
-
-          {/* Word Practice Guide - For word tasks */}
-          {task.type === 'word' && (
-            <div className="mb-8">
-              <h3 className="text-xl font-bold text-yellow-800 mb-4 text-center">
-                ✏️ 詞語練習
-              </h3>
-              <div className="bg-yellow-100 rounded-lg p-6 text-center">
-                <div className="text-4xl font-bold text-yellow-700 mb-4 tracking-widest">
-                  {task.content}
-                </div>
-                <p className="text-yellow-600 mb-2">
-                  請仔細觀察每個字的結構，注意字與字之間的搭配
-                </p>
-                <p className="text-yellow-700 text-sm">
-                  建議先分別練習每個字，再練習整個詞語
-                </p>
-              </div>
             </div>
           )}
 
@@ -694,7 +631,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                 📝 逐筆練習
               </h3>
               <div className="bg-yellow-100 rounded-lg p-4">
-                {/* 單詞學習的字符快速切換 */}
+                {/* 單詞學習的單字快速切換 */}
                 {task.type === 'word' && (
                   <div className="flex justify-center mb-4">
                     <div className="inline-flex bg-white rounded-lg p-1 shadow-sm">
@@ -726,7 +663,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                   <div className="text-center">
                     {task.type === 'word' && (
                       <div className="text-lg font-bold text-orange-600 mb-1">
-                        當前字符：{Array.from(task.content)[currentCharIndex]}
+                        當前單字：{Array.from(task.content)[currentCharIndex]}
                       </div>
                     )}
                     <span className="text-yellow-800 font-medium">
@@ -734,7 +671,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                     </span>
                     {task.type === 'word' && (
                       <div className="text-sm text-yellow-600 mt-1">
-                        字符進度：{currentCharIndex + 1} / {Array.from(task.content).length}
+                        單字進度：{currentCharIndex + 1} / {Array.from(task.content).length}
                       </div>
                     )}
                   </div>
