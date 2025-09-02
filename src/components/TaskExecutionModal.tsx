@@ -416,6 +416,12 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
     });
   };
 
+  const handleSelectCharacter = (charIndex: number) => {
+    console.log('Selecting character at index:', charIndex);
+    setCurrentCharIndex(charIndex);
+    setCurrentStep(0); // 重置到第一筆
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -465,63 +471,89 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                     <div key={index} className="relative">
                       {/* 字符標題 */}
                       {task.type === 'word' && (
-                        <div className="text-center mb-2">
+                        <div 
+                          className="text-center mb-2 cursor-pointer hover:bg-yellow-100 rounded-lg p-2 transition-colors"
+                          onClick={() => handleSelectCharacter(index)}
+                        >
                           <span className={`text-2xl font-bold ${
                             index === currentCharIndex ? 'text-orange-600' : 'text-yellow-700'
                           }`}>
                             {char}
                           </span>
                           <div className="text-sm text-yellow-600">
-                            {index === currentCharIndex ? '(當前字符)' : ''}
+                            {index === currentCharIndex ? '(當前字符)' : '點擊選擇'}
                           </div>
                         </div>
                       )}
                       
-                      {/* Hanzi Writer 容器 */}
-                      <div 
-                        ref={el => {
-                          console.log(`Setting ref for character ${char} at index ${index}:`, !!el);
-                          writerRefs.current[index] = el;
-                        }}
-                        className={`border-2 rounded-lg ${
-                          index === currentCharIndex ? 'border-orange-500' : 'border-yellow-800'
-                        }`}
-                        style={{ 
-                          width: task.type === 'word' ? '280px' : '300px', 
-                          height: task.type === 'word' ? '280px' : '300px',
-                          backgroundColor: '#FAFAFA'
-                        }}
-                      />
-                      
-                      {/* 九宮格輔助線 */}
-                      <div className="absolute pointer-events-none" style={{ 
-                        top: task.type === 'word' ? '40px' : '0px',
-                        left: '0px',
-                        right: '0px',
-                        bottom: '0px'
-                      }}>
-                        <div className="w-full h-full grid grid-cols-3 grid-rows-3">
-                          {Array.from({ length: 9 }, (_, i) => (
-                            <div key={i} className="border border-gray-300 opacity-40" />
-                          ))}
+                      {/* Hanzi Writer 容器包裝 */}
+                      <div className="relative">
+                        {/* Hanzi Writer 容器 */}
+                        <div 
+                          ref={el => {
+                            console.log(`Setting ref for character ${char} at index ${index}:`, !!el);
+                            writerRefs.current[index] = el;
+                          }}
+                          className={`relative border-2 rounded-lg ${
+                            index === currentCharIndex ? 'border-orange-500' : 'border-yellow-800'
+                          }`}
+                          style={{ 
+                            width: task.type === 'word' ? '280px' : '300px', 
+                            height: task.type === 'word' ? '280px' : '300px',
+                            backgroundColor: '#FAFAFA'
+                          }}
+                        />
+                        
+                        {/* 九宮格輔助線 - 放在容器外層，確保不被 Hanzi Writer 覆蓋 */}
+                        <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
+                          <svg 
+                            className="w-full h-full" 
+                            style={{ position: 'absolute', top: 0, left: 0 }}
+                          >
+                            {/* 垂直線 */}
+                            <line 
+                              x1="33.33%" y1="0%" 
+                              x2="33.33%" y2="100%" 
+                              stroke="#d1d5db" 
+                              strokeWidth="1" 
+                              opacity="0.5"
+                            />
+                            <line 
+                              x1="66.67%" y1="0%" 
+                              x2="66.67%" y2="100%" 
+                              stroke="#d1d5db" 
+                              strokeWidth="1" 
+                              opacity="0.5"
+                            />
+                            {/* 水平線 */}
+                            <line 
+                              x1="0%" y1="33.33%" 
+                              x2="100%" y2="33.33%" 
+                              stroke="#d1d5db" 
+                              strokeWidth="1" 
+                              opacity="0.5"
+                            />
+                            <line 
+                              x1="0%" y1="66.67%" 
+                              x2="100%" y2="66.67%" 
+                              stroke="#d1d5db" 
+                              strokeWidth="1" 
+                              opacity="0.5"
+                            />
+                          </svg>
                         </div>
+                        
+                        {/* 錯誤顯示 */}
+                        {loadingError && index === 0 && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-lg">
+                            <div className="text-center p-4">
+                              <div className="text-red-600 text-lg mb-2">⚠️</div>
+                              <div className="text-red-700 text-sm font-medium mb-2">{loadingError}</div>
+                              <div className="text-gray-600 text-xs">請檢查網路連線或稍後再試</div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      
-                      {/* 錯誤顯示 */}
-                      {loadingError && index === 0 && (
-                        <div className="absolute flex items-center justify-center bg-white bg-opacity-90 rounded-lg" style={{ 
-                          top: task.type === 'word' ? '40px' : '0px',
-                          left: '0px',
-                          right: '0px',
-                          bottom: '0px'
-                        }}>
-                          <div className="text-center p-4">
-                            <div className="text-red-600 text-lg mb-2">⚠️</div>
-                            <div className="text-red-700 text-sm font-medium mb-2">{loadingError}</div>
-                            <div className="text-gray-600 text-xs">請檢查網路連線或稍後再試</div>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -536,31 +568,76 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                 >
                   {isAnimating ? '動畫中...' : (task.type === 'word' ? '完整動畫(全部)' : '完整動畫')}
                 </button>
+                
+                {/* 單詞學習的額外控制 */}
                 {task.type === 'word' && (
-                  <button
-                    onClick={() => handleAnimateCharacter()}
-                    disabled={isAnimating}
-                    className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 transition-colors text-sm"
-                  >
-                    {isAnimating ? '動畫中...' : '當前字動畫'}
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleAnimateCharacter()}
+                      disabled={isAnimating}
+                      className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 transition-colors text-sm"
+                    >
+                      {isAnimating ? '動畫中...' : `播放「${Array.from(task.content)[currentCharIndex]}」`}
+                    </button>
+                    <button
+                      onClick={() => handleShowCharacter()}
+                      className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+                    >
+                      顯示「{Array.from(task.content)[currentCharIndex]}」
+                    </button>
+                    <button
+                      onClick={() => handleHideCharacter()}
+                      className="px-3 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors text-sm"
+                    >
+                      隱藏「{Array.from(task.content)[currentCharIndex]}」
+                    </button>
+                  </>
                 )}
+                
+                {/* 全局控制 */}
                 <button
                   onClick={task.type === 'word' ? handleShowAllCharacters : () => handleShowCharacter()}
                   className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                 >
-                  顯示字{task.type === 'word' ? '(全部)' : ''}
+                  顯示{task.type === 'word' ? '全部' : '字'}
                 </button>
                 <button
                   onClick={task.type === 'word' ? handleHideAllCharacters : () => handleHideCharacter()}
                   className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
                 >
-                  隱藏字{task.type === 'word' ? '(全部)' : ''}
+                  隱藏{task.type === 'word' ? '全部' : '字'}
                 </button>
               </div>
               
+              {/* 單詞學習的字符選擇器 */}
+              {task.type === 'word' && (
+                <div className="text-center mb-4">
+                  <div className="inline-flex bg-yellow-100 rounded-lg p-1">
+                    {Array.from(task.content).map((char, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleSelectCharacter(index)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                          index === currentCharIndex
+                            ? 'bg-orange-500 text-white shadow-md'
+                            : 'text-yellow-700 hover:bg-yellow-200'
+                        }`}
+                      >
+                        {char}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-yellow-600 mt-2">
+                    點擊字符切換練習對象
+                  </p>
+                </div>
+              )}
+              
               <p className="text-center text-yellow-600 text-sm">
-                觀察筆順動畫，學習正確的書寫順序
+                {task.type === 'word' 
+                  ? `正在學習「${Array.from(task.content)[currentCharIndex]}」的筆順` 
+                  : '觀察筆順動畫，學習正確的書寫順序'
+                }
               </p>
             </div>
           )}
@@ -617,10 +694,31 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                 📝 逐筆練習
               </h3>
               <div className="bg-yellow-100 rounded-lg p-4">
+                {/* 單詞學習的字符快速切換 */}
+                {task.type === 'word' && (
+                  <div className="flex justify-center mb-4">
+                    <div className="inline-flex bg-white rounded-lg p-1 shadow-sm">
+                      {Array.from(task.content).map((char, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleSelectCharacter(index)}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                            index === currentCharIndex
+                              ? 'bg-orange-500 text-white shadow-sm'
+                              : 'text-gray-600 hover:bg-gray-100'
+                          }`}
+                        >
+                          {char}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <div className="flex items-center justify-between mb-4">
                   <button
                     onClick={handleStepPrev}
-                    disabled={currentStep === 0}
+                    disabled={currentStep === 0 && currentCharIndex === 0}
                     className="px-4 py-2 bg-yellow-600 text-white rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                   >
                     上一筆
