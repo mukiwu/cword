@@ -35,7 +35,7 @@ const styles = `
   .avatar-card.selected {
     transform: scale(1.1);
     box-shadow: 0 0 0 3px #D4AF37;
-    background: rgba(212, 175, 55, 0.1);
+    background: rgba(255, 255, 255, 0.5);
     animation: bounce 0.5s ease;
   }
 
