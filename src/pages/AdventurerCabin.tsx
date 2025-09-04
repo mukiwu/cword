@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import type { IUserProfile, IWeeklyLedger } from '../types';
+import type { IUserProfile, IWeeklyLedger, ICoinExchange } from '../types';
 import { UserProfileService } from '../services/userProfile.service';
 import { WeeklyLedgerService } from '../services/weeklyLedger.service';
 import { TaskGenerationService } from '../services/taskGeneration.service';
@@ -52,6 +52,10 @@ const AdventurerCabin: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [payoutResult, setPayoutResult] = useState<any>(null);
   const [showPayout, setShowPayout] = useState(false);
+  const [exchanges, setExchanges] = useState<ICoinExchange[]>([]);
+  const [showExchangeModal, setShowExchangeModal] = useState(false);
+  const [exchangeAmount, setExchangeAmount] = useState(0);
+  const [exchangeResult, setExchangeResult] = useState<any>(null);
 
   useEffect(() => {
     loadData();
@@ -77,6 +81,10 @@ const AdventurerCabin: React.FC = () => {
       // Get weekly history
       const history = await WeeklyLedgerService.getWeeklyHistory();
       setWeeklyHistory(history.slice(0, 5)); // Show last 5 weeks
+      
+      // Get exchange history
+      const exchangeHistory = WeeklyLedgerService.getExchangeHistory();
+      setExchanges(exchangeHistory.slice(0, 10)); // Show last 10 exchanges
 
       // Check if it's payout time
       const now = new Date();
@@ -103,6 +111,69 @@ const AdventurerCabin: React.FC = () => {
     } catch (err) {
       console.error('Payout failed:', err);
     }
+  };
+
+  const handleExchangeRequest = async () => {
+    try {
+      if (exchangeAmount < 10) {
+        setExchangeResult({ success: false, message: '兌換金額不足，至少需要10個學習幣' });
+        return;
+      }
+
+      // 找到最近已結算的週帳本
+      const paidOutWeeks = weeklyHistory.filter(w => w.status === 'paid_out');
+      if (paidOutWeeks.length === 0) {
+        setExchangeResult({ success: false, message: '沒有可兌換的學習幣' });
+        return;
+      }
+
+      // 選擇最近的已結算週帳本
+      const latestPaidWeek = paidOutWeeks[0];
+      
+      // 檢查是否還有可兌換的學習幣
+      const canExchange = await WeeklyLedgerService.canRequestExchange(latestPaidWeek.id);
+      if (!canExchange) {
+        setExchangeResult({ success: false, message: '沒有足夠的學習幣可兌換' });
+        return;
+      }
+
+      const exchange = await WeeklyLedgerService.requestCoinExchange(latestPaidWeek.id, exchangeAmount);
+      setExchangeResult({ 
+        success: true, 
+        exchange,
+        message: `成功申請兌換 ${exchangeAmount} 個學習幣 = NT$ ${Math.floor(exchangeAmount / 10)}` 
+      });
+      setShowExchangeModal(false);
+      setExchangeAmount(0);
+      await loadData(); // Reload to show new exchange
+    } catch (err: any) {
+      setExchangeResult({ success: false, message: err.message });
+    }
+  };
+
+  const getAvailableCoinsForExchange = () => {
+    const paidOutWeeks = weeklyHistory.filter(w => w.status === 'paid_out');
+    if (paidOutWeeks.length === 0) return 0;
+    
+    const latestWeek = paidOutWeeks[0];
+    
+    // 計算已兌換的學習幣總數 (不包括被拒絕的)
+    const alreadyExchanged = exchanges
+      .filter(ex => ex.weekId === latestWeek.id && ex.status !== 'rejected')
+      .reduce((total, ex) => total + ex.coinsExchanged, 0);
+    
+    return Math.max(0, latestWeek.totalEarned - alreadyExchanged);
+  };
+
+  const getTotalPaidOutCoins = () => {
+    return weeklyHistory
+      .filter(w => w.status === 'paid_out')
+      .reduce((total, w) => total + w.totalEarned, 0);
+  };
+
+  const isCurrentWeekSettleable = () => {
+    const now = new Date();
+    return now.getDay() === 0 && now.getHours() >= 20; // 週日晚上8點後
   };
 
   const getAvatarDisplay = (avatarId: string) => {
@@ -306,7 +377,7 @@ const AdventurerCabin: React.FC = () => {
           </div>
 
           {/* Current Stats */}
-          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="parchment-bg rounded-2xl p-6 text-center">
               <div className="w-12 h-12 coin-glow bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3">
                 <i className="ri-task-line text-white text-xl"></i>
@@ -321,6 +392,18 @@ const AdventurerCabin: React.FC = () => {
               </div>
               <div className="text-3xl font-bold text-yellow-600 mb-1">{weeklyTotal}</div>
               <div className="text-yellow-800 font-medium">本週學習幣</div>
+              <div className="text-xs text-yellow-600 mt-1">
+                {isCurrentWeekSettleable() ? '可結算' : '進行中'}
+              </div>
+            </div>
+            
+            <div className="parchment-bg rounded-2xl p-6 text-center">
+              <div className="w-12 h-12 coin-glow bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i className="ri-exchange-dollar-line text-white text-xl"></i>
+              </div>
+              <div className="text-3xl font-bold text-emerald-600 mb-1">{getAvailableCoinsForExchange()}</div>
+              <div className="text-yellow-800 font-medium">可兌換學習幣</div>
+              <div className="text-xs text-yellow-600 mt-1">已結算週數</div>
             </div>
             
             <div className="parchment-bg rounded-2xl p-6 text-center">
@@ -394,11 +477,191 @@ const AdventurerCabin: React.FC = () => {
             </div>
           )}
 
+          {/* Coin Exchange Section */}
+          <div className="scroll-bg rounded-2xl p-6 mb-8 mx-auto max-w-4xl opacity-90">
+            <h3 className="text-xl font-bold text-yellow-800 mb-6">💰 學習幣兌換</h3>
+            
+            {/* 兌換說明區塊 */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <i className="ri-information-line text-white text-sm"></i>
+                </div>
+                <div className="text-sm">
+                  <h4 className="font-semibold text-blue-800 mb-2">兌換說明</h4>
+                  <ul className="text-blue-700 space-y-1">
+                    <li>• 兌換匯率：<span className="font-semibold">10 學習幣 = NT$ 1</span></li>
+                    <li>• 只能兌換已結算的學習幣（需要在週日晚上8點後執行結算）</li>
+                    <li>• 本週獲得的學習幣需等到下週結算後才能兌換</li>
+                    <li>• 兌換申請需要家長確認後發放</li>
+                  </ul>
+                  {!isCurrentWeekSettleable() && weeklyTotal > 0 && (
+                    <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                      <p className="text-yellow-800 text-xs">
+                        💡 你本週有 {weeklyTotal} 個學習幣，請在週日晚上8點後進行結算，下週就能兌換了！
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="parchment-bg rounded-lg p-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-emerald-600 mb-2">
+                    {getAvailableCoinsForExchange()}
+                  </div>
+                  <div className="text-yellow-800 font-medium mb-1">可兌換學習幣</div>
+                  <div className="text-xs text-yellow-600 mb-4">
+                    來自已結算的週數
+                  </div>
+                  {getAvailableCoinsForExchange() >= 10 ? (
+                    <button
+                      onClick={() => setShowExchangeModal(true)}
+                      className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+                    >
+                      申請兌換
+                    </button>
+                  ) : (
+                    <div className="text-center">
+                      <button
+                        disabled
+                        className="bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed mb-2"
+                      >
+                        申請兌換
+                      </button>
+                      <p className="text-xs text-yellow-600">
+                        {getAvailableCoinsForExchange() === 0 
+                          ? '沒有可兌換的學習幣' 
+                          : `需要至少10個學習幣（目前：${getAvailableCoinsForExchange()}）`
+                        }
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="parchment-bg rounded-lg p-4">
+                <h4 className="font-semibold text-yellow-800 mb-3">最近兌換記錄</h4>
+                {exchanges.length > 0 ? (
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {exchanges.slice(0, 3).map((exchange) => (
+                      <div key={exchange.id} className="flex justify-between items-center text-sm">
+                        <span className="text-yellow-700">
+                          {exchange.coinsExchanged} 幣 → NT$ {exchange.ntdAmount}
+                        </span>
+                        <span className={`px-2 py-1 rounded text-xs ${{
+                          'pending': 'bg-yellow-100 text-yellow-800',
+                          'approved': 'bg-blue-100 text-blue-800',
+                          'paid': 'bg-green-100 text-green-800',
+                          'rejected': 'bg-red-100 text-red-800'
+                        }[exchange.status]}`}>
+                          {exchange.status === 'pending' ? '申請中' : 
+                           exchange.status === 'approved' ? '已核准' :
+                           exchange.status === 'paid' ? '已發放' : '已拒絕'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <i className="ri-exchange-line text-gray-400 text-2xl mb-2"></i>
+                    <p className="text-yellow-600 text-sm">尚無兌換記錄</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Weekly Progress Chart */}
           <div className="scroll-bg rounded-2xl p-6 mb-8 mx-auto max-w-4xl opacity-90">
             <h3 className="text-xl font-bold text-yellow-800 mb-6">📊 週進度紀錄</h3>
             <WeeklyChart history={weeklyHistory} />
           </div>
+
+          {/* Exchange Modal */}
+          {showExchangeModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+              <div className="parchment-bg rounded-2xl p-6 max-w-md w-full">
+                <h3 className="text-xl font-bold text-yellow-800 mb-4">💰 申請學習幣兌換</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-yellow-700 font-medium mb-2">
+                      兌換金額 (學習幣)
+                    </label>
+                    <input
+                      type="number"
+                      min="10"
+                      max={getAvailableCoinsForExchange()}
+                      step="10"
+                      value={exchangeAmount}
+                      onChange={(e) => setExchangeAmount(parseInt(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-yellow-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                      placeholder="請輸入兌換金額"
+                    />
+                  </div>
+                  <div className="text-sm text-yellow-600">
+                    <p>可兌換： {getAvailableCoinsForExchange()} 個學習幣</p>
+                    <p>預計獲得： NT$ {Math.floor(exchangeAmount / 10)}</p>
+                    <p className="mt-2 text-xs">※ 兌換申請需要家長確認後才會發放</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowExchangeModal(false)}
+                      className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={handleExchangeRequest}
+                      disabled={exchangeAmount < 10}
+                      className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                    >
+                      確認兌換
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Exchange Result Modal */}
+          {exchangeResult && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+              <div className="parchment-bg rounded-2xl p-6 max-w-md w-full">
+                {exchangeResult.success ? (
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-green-600 mb-4">🎉 兌換申請成功</h3>
+                    <div className="scroll-bg rounded-lg p-4 mb-4">
+                      <p className="text-yellow-800 text-lg font-semibold mb-2">
+                        兌換申請已提交
+                      </p>
+                      <p className="text-yellow-700 mb-2">
+                        {exchangeResult.message}
+                      </p>
+                      <p className="text-sm text-yellow-600">
+                        請等待家長確認，通過後將發放至指定帳戶
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-red-600 mb-2">❌ 兌換失敗</h3>
+                    <p className="text-yellow-700 mb-4">{exchangeResult.message}</p>
+                  </div>
+                )}
+                <div className="text-center">
+                  <button
+                    onClick={() => setExchangeResult(null)}
+                    className={`${exchangeResult.success ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} text-white px-6 py-2 rounded-lg font-medium transition-colors`}
+                  >
+                    確認
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Navigation */}
           <div className="text-center">

@@ -323,29 +323,41 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
       const currentCharStrokes = totalStrokes[currentCharIndex] || 1;
       
       try {
+        // 移除立即顯示筆畫的代碼，因為 showStroke 不是有效的 API
+        
         currentWriter.animateStroke(currentStep, {
           onComplete: () => {
-            if (currentStep < currentCharStrokes - 1) {
-              // 當前單字還有下一筆
-              setCurrentStep(currentStep + 1);
-            } else if (currentCharIndex < writers.length - 1) {
-              // 當前單字完成，移到下一個單字
-              setCurrentCharIndex(currentCharIndex + 1);
-              setCurrentStep(0);
+            const nextStep = currentStep + 1;
+            
+            // 檢查是否需要切換到下一個字符
+            if (nextStep >= currentCharStrokes) {
+              // 當前單字的所有筆順都完成了
+              if (currentCharIndex < writers.length - 1) {
+                // 移到下一個單字
+                setCurrentCharIndex(currentCharIndex + 1);
+                setCurrentStep(0);
+              } else {
+                // 所有單字的筆順都學習完畢，設定為完成狀態
+                setCurrentStep(currentCharStrokes); // 這樣可以觸發完成狀態的UI
+                
+                // 確保所有筆畫都顯示在畫布上，包括剛剛完成的最後一筆
+                setTimeout(() => {
+                  // 使用正確的 API 來顯示完整字符
+                  currentWriter.showCharacter();
+                }, 50);
+                
+                console.log('所有筆順都學習完畢，請手動完成任務');
+              }
             } else {
-              // 所有單字完成
-              setTimeout(() => {
-                onComplete();
-              }, 1000);
+              // 正常情況下更新到下一筆
+              setCurrentStep(nextStep);
             }
           }
         });
       } catch (error) {
         console.error('Error animating stroke:', error);
-        onComplete();
+        // 發生錯誤時也不自動完成任務，讓用戶自己決定
       }
-    } else {
-      onComplete();
     }
   };
 
@@ -355,11 +367,16 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
       const newStep = currentStep - 1;
       setCurrentStep(newStep);
       const currentWriter = writers[currentCharIndex];
-      if (currentWriter) {
+      if (currentWriter && newStep > 0) {
+        // 重新播放從第一筆到目標筆的動畫
         currentWriter.hideCharacter();
-        for (let i = 0; i < newStep; i++) {
-          currentWriter.showStroke(i);
-        }
+        setTimeout(() => {
+          for (let i = 0; i < newStep; i++) {
+            currentWriter.animateStroke(i);
+          }
+        }, 50);
+      } else if (currentWriter) {
+        currentWriter.hideCharacter();
       }
     } else if (currentCharIndex > 0) {
       // 上一個單字的最後一筆
@@ -369,11 +386,15 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
       setCurrentStep(newStep);
       
       const prevWriter = writers[newCharIndex];
-      if (prevWriter) {
+      if (prevWriter && newStep > 0) {
         prevWriter.hideCharacter();
-        for (let i = 0; i < newStep; i++) {
-          prevWriter.showStroke(i);
-        }
+        setTimeout(() => {
+          for (let i = 0; i < newStep; i++) {
+            prevWriter.animateStroke(i);
+          }
+        }, 50);
+      } else if (prevWriter) {
+        prevWriter.hideCharacter();
       }
     }
   };
@@ -542,13 +563,16 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
               
               {/* 動畫控制按鈕 */}
               <div className="flex justify-center gap-2 mb-4 flex-wrap">
-                <button
-                  onClick={task.type === 'word' ? handleAnimateAllCharacters : () => handleAnimateCharacter()}
-                  disabled={isAnimating}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors text-sm"
-                >
-                  {isAnimating ? '動畫中...' : (task.type === 'word' ? '完整動畫(全部)' : '完整動畫')}
-                </button>
+                {/* 單字學習才顯示完整動畫按鈕，單詞學習移除此按鈕 */}
+                {task.type === 'character' && (
+                  <button
+                    onClick={() => handleAnimateCharacter()}
+                    disabled={isAnimating}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors text-sm"
+                  >
+                    {isAnimating ? '動畫中...' : '完整動畫'}
+                  </button>
+                )}
                 
                 {/* 單詞學習的額外控制 */}
                 {task.type === 'word' && (
@@ -667,7 +691,10 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                       </div>
                     )}
                     <span className="text-yellow-800 font-medium">
-                      第 {currentStep + 1} 筆 / 共 {totalStrokes[currentCharIndex] || 1} 筆
+                      {currentStep >= (totalStrokes[currentCharIndex] || 1) 
+                        ? `筆順完成 / 共 ${totalStrokes[currentCharIndex] || 1} 筆`
+                        : `第 ${currentStep + 1} 筆 / 共 ${totalStrokes[currentCharIndex] || 1} 筆`
+                      }
                     </span>
                     {task.type === 'word' && (
                       <div className="text-sm text-yellow-600 mt-1">
@@ -677,10 +704,10 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                   </div>
                   <button
                     onClick={handleStepNext}
-                    disabled={isAnimating}
-                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:bg-gray-400 transition-colors"
+                    disabled={isAnimating || (currentCharIndex >= Array.from(task.content).length - 1 && currentStep >= (totalStrokes[currentCharIndex] || 1))}
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
                   >
-                    {currentCharIndex >= Array.from(task.content).length - 1 && currentStep >= (totalStrokes[currentCharIndex] || 1) - 1 ? '完成練習' : '下一筆'}
+                    {currentCharIndex >= Array.from(task.content).length - 1 && currentStep >= (totalStrokes[currentCharIndex] || 1) ? '筆順完成' : '下一筆'}
                   </button>
                 </div>
                 
@@ -688,6 +715,11 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                   <p className="text-yellow-600 text-sm">
                     點擊「下一筆」學習每一筆的寫法
                   </p>
+                  {currentCharIndex >= Array.from(task.content).length - 1 && currentStep >= (totalStrokes[currentCharIndex] || 1) && (
+                    <p className="text-green-600 text-sm mt-2 font-medium">
+                      🎉 筆順學習完成！要完成任務請點擊下方的「完成練習」按鈕
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

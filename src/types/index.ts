@@ -30,6 +30,18 @@ export interface IWeeklyLedger {
   completedTaskIds: string[];
 }
 
+export interface ICoinExchange {
+  id: string;
+  weekId: string; // Reference to WeeklyLedger id
+  coinsExchanged: number;
+  ntdAmount: number; // 新台幣金額
+  exchangeRate: number; // 兌換匯率 (預設 10 學習幣 = 1 NTD)
+  status: 'pending' | 'approved' | 'paid' | 'rejected';
+  requestedAt: Date;
+  processedAt?: Date;
+  notes?: string;
+}
+
 export type AIModel = 'gemini' | 'openai' | 'claude';
 
 export interface AIAPIConfig {

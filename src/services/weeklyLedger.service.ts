@@ -1,5 +1,7 @@
-import type { IWeeklyLedger } from '../types';
+import type { IWeeklyLedger, ICoinExchange } from '../types';
 import { DatabaseService } from './database';
+
+const EXCHANGE_STORAGE_KEY = 'cword-coin-exchanges';
 
 export class WeeklyLedgerService {
   static async addTaskReward(reward: number, taskId: string): Promise<void> {
@@ -146,5 +148,118 @@ export class WeeklyLedgerService {
     return allLedgers
       .filter(ledger => ledger.status === 'paid_out')
       .reduce((total, ledger) => total + ledger.totalEarned, 0);
+  }
+
+  // 兌換相關功能
+  static async requestCoinExchange(weekId: string, coinsToExchange: number): Promise<ICoinExchange> {
+    const EXCHANGE_RATE = 10; // 10 學習幣 = 1 NTD
+    const ntdAmount = Math.floor(coinsToExchange / EXCHANGE_RATE);
+    
+    if (coinsToExchange < EXCHANGE_RATE) {
+      throw new Error('兌換金額不足，至少需要10個學習幣');
+    }
+
+    // 移除每週只能兌換一次的限制
+
+    // 檢查週帳本是否存在且已完成
+    const weeklyLedger = await DatabaseService.get<IWeeklyLedger>('weeklyLedger', weekId);
+    if (!weeklyLedger || weeklyLedger.status !== 'paid_out') {
+      throw new Error('該週帳本尚未完成或不存在');
+    }
+
+    // 計算已兌換的學習幣總數
+    const existingExchanges = this.getExchangeHistory();
+    const alreadyExchanged = existingExchanges
+      .filter(ex => ex.weekId === weekId && ex.status !== 'rejected')
+      .reduce((total, ex) => total + ex.coinsExchanged, 0);
+    
+    if (weeklyLedger.totalEarned < (alreadyExchanged + coinsToExchange)) {
+      throw new Error(`學習幣數量不足，可兌換: ${weeklyLedger.totalEarned - alreadyExchanged} 個`);
+    }
+
+    const exchange: ICoinExchange = {
+      id: `exchange-${Date.now()}`,
+      weekId,
+      coinsExchanged: coinsToExchange,
+      ntdAmount,
+      exchangeRate: EXCHANGE_RATE,
+      status: 'pending',
+      requestedAt: new Date(),
+    };
+
+    // 儲存到 localStorage
+    const updatedExchanges = this.getExchangeHistory();
+    updatedExchanges.push(exchange);
+    localStorage.setItem(EXCHANGE_STORAGE_KEY, JSON.stringify(updatedExchanges));
+
+    return exchange;
+  }
+
+  static getExchangeHistory(): ICoinExchange[] {
+    try {
+      const exchanges = localStorage.getItem(EXCHANGE_STORAGE_KEY);
+      if (!exchanges) return [];
+      
+      return JSON.parse(exchanges).map((exchange: any) => ({
+        ...exchange,
+        requestedAt: new Date(exchange.requestedAt),
+        processedAt: exchange.processedAt ? new Date(exchange.processedAt) : undefined,
+      }));
+    } catch (error) {
+      console.error('Failed to load exchange history:', error);
+      return [];
+    }
+  }
+
+  static async getExchangeByWeekId(weekId: string): Promise<ICoinExchange | null> {
+    const exchanges = this.getExchangeHistory();
+    return exchanges.find(ex => ex.weekId === weekId) || null;
+  }
+
+  static async updateExchangeStatus(exchangeId: string, status: ICoinExchange['status'], notes?: string): Promise<void> {
+    const exchanges = this.getExchangeHistory();
+    const exchangeIndex = exchanges.findIndex(ex => ex.id === exchangeId);
+    
+    if (exchangeIndex === -1) {
+      throw new Error('兌換記錄不存在');
+    }
+
+    exchanges[exchangeIndex] = {
+      ...exchanges[exchangeIndex],
+      status,
+      processedAt: new Date(),
+      notes,
+    };
+
+    localStorage.setItem(EXCHANGE_STORAGE_KEY, JSON.stringify(exchanges));
+  }
+
+  static async canRequestExchange(weekId: string): Promise<boolean> {
+    // 移除每週只能兌換一次的限制，只要有足夠學習幣就可以兌換
+    const weeklyLedger = await DatabaseService.get<IWeeklyLedger>('weeklyLedger', weekId);
+    if (!weeklyLedger || weeklyLedger.status !== 'paid_out') {
+      return false;
+    }
+    
+    const exchanges = this.getExchangeHistory();
+    const alreadyExchanged = exchanges
+      .filter(ex => ex.weekId === weekId && ex.status !== 'rejected')
+      .reduce((total, ex) => total + ex.coinsExchanged, 0);
+    
+    return weeklyLedger.totalEarned > alreadyExchanged;
+  }
+
+  static async getAvailableCoinsForExchange(weekId: string): Promise<number> {
+    const weeklyLedger = await DatabaseService.get<IWeeklyLedger>('weeklyLedger', weekId);
+    if (!weeklyLedger || weeklyLedger.status !== 'paid_out') {
+      return 0;
+    }
+    
+    const exchanges = this.getExchangeHistory();
+    const alreadyExchanged = exchanges
+      .filter(ex => ex.weekId === weekId && ex.status !== 'rejected')
+      .reduce((total, ex) => total + ex.coinsExchanged, 0);
+    
+    return Math.max(0, weeklyLedger.totalEarned - alreadyExchanged);
   }
 }
