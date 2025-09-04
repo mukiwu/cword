@@ -228,7 +228,7 @@ const ProfileSetup: React.FC = () => {
         <div className="w-full max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-6">
-            <h1 className="text-4xl text-primary mb-4" style={{ fontFamily: 'Pacifico, cursive' }}>🏝️ 生字冒險島</h1>
+            <h1 className="text-4xl text-primary mb-4">🏝️ 生字冒險島</h1>
             <h2 className="text-3xl font-bold text-gray-800 mb-2">準備開始你的冒險旅程！</h2>
             <p className="text-lg text-gray-600">和我們說說你是誰吧！</p>
           </div>
