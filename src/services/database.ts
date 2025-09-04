@@ -77,4 +77,22 @@ export class DatabaseService {
       throw error;
     }
   }
+
+  static async clearAllData(): Promise<void> {
+    try {
+      // Clear all tables
+      await db.userProfile.clear();
+      await db.dailyTasks.clear();
+      await db.weeklyLedger.clear();
+      
+      // Clear session storage for API keys
+      sessionStorage.removeItem('ai_api_key');
+      sessionStorage.removeItem('ai_model');
+      
+      console.log('All data cleared successfully');
+    } catch (error) {
+      console.error('Error clearing all data:', error);
+      throw error;
+    }
+  }
 }

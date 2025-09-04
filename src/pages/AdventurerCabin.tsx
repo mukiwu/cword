@@ -4,6 +4,7 @@ import type { IUserProfile, IWeeklyLedger, ICoinExchange } from '../types';
 import { UserProfileService } from '../services/userProfile.service';
 import { WeeklyLedgerService } from '../services/weeklyLedger.service';
 import { TaskGenerationService } from '../services/taskGeneration.service';
+import { DatabaseService } from '../services/database';
 
 // 添加自定義 CSS 樣式 - 與 Guild 頁面一致的中世紀風格
 const styles = `
@@ -148,6 +149,18 @@ const AdventurerCabin: React.FC = () => {
       await loadData(); // Reload to show new exchange
     } catch (err: any) {
       setExchangeResult({ success: false, message: err.message });
+    }
+  };
+
+  const handleLogout = async () => {
+    if (confirm('確定要登出嗎？這將會清除所有學習紀錄和設定。')) {
+      try {
+        await DatabaseService.clearAllData();
+        window.location.href = '/';
+      } catch (err) {
+        console.error('Logout failed:', err);
+        alert('登出失敗，請重試');
+      }
     }
   };
 
@@ -334,7 +347,7 @@ const AdventurerCabin: React.FC = () => {
             </h1>
           </div>
 
-          <div className="flex items-center">
+          <div className="flex items-center gap-3">
             <div className="flex items-center bg-black bg-opacity-50 rounded-xl px-4 py-2">
               <div className="w-8 h-8 flex items-center justify-center">
                 <i className="ri-cake-2-line text-white text-xl"></i>
@@ -346,6 +359,13 @@ const AdventurerCabin: React.FC = () => {
               </span>
             </div>
             {getAvatarDisplay(userProfile?.avatarId || '')}
+            <button
+              onClick={handleLogout}
+              className="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center border-2 border-red-700 transition-colors"
+              title="登出"
+            >
+              <i className="ri-logout-box-line text-white text-xl"></i>
+            </button>
           </div>
         </header>
 
