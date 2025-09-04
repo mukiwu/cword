@@ -187,67 +187,155 @@ export class TaskGenerationService {
     return [...new Set(contents)].sort();
   }
 
-  // 新增：生成備用任務
+  // 新增：生成備用任務（支持多種任務類型）
   private static async generateFallbackTasks(date: Date, userAge: number): Promise<IDailyTask[]> {
     const grade = UserProfileService.getGradeFromAge(userAge);
     const historicalContents = await this.getAllHistoricalContents();
     const usedSet = new Set(historicalContents);
     
-    // 依年級準備更具挑戰性的備用字詞（提升難度）
-    const fallbackWords: Record<number, string[]> = {
-      1: ['春', '夏', '秋', '冬', '花', '草', '樹', '鳥', '雲', '雨'],
-      2: ['聰', '明', '勇', '敢', '溫', '暖', '清', '楚', '美', '麗'], // 8歲更具挑戰性
-      3: ['智', '慧', '堅', '強', '優', '秀', '認', '真', '負', '責'],
-      4: ['創', '造', '發', '展', '進', '步', '成', '功', '夢', '想'],
-      5: ['哲', '學', '科', '技', '文', '化', '藝', '術', '歷', '史'],
-      6: ['邏', '輯', '思', '維', '創', '新', '探', '索', '研', '究']
+    // 備用內容庫
+    const fallbackContent: Record<number, { 
+      characters: string[], 
+      words: string[], 
+      phrases: string[] 
+    }> = {
+      1: {
+        characters: ['春', '夏', '秋', '冬', '花', '草', '樹', '鳥', '雲', '雨'],
+        words: ['春天', '夏日', '秋風', '冬雪', '花園', '草地'],
+        phrases: ['春天', '花朵', '小鳥', '白雲']
+      },
+      2: {
+        characters: ['聰', '明', '勇', '敢', '溫', '暖', '清', '楚', '美', '麗'],
+        words: ['聰明', '勇敢', '溫暖', '清楚', '美麗', '快樂'],
+        phrases: ['聰明', '勇敢', '溫暖', '美麗']
+      },
+      3: {
+        characters: ['智', '慧', '堅', '強', '優', '秀', '認', '真', '負', '責'],
+        words: ['智慧', '堅強', '優秀', '認真', '負責', '努力'],
+        phrases: ['智慧', '堅強', '優秀', '努力']
+      },
+      4: {
+        characters: ['創', '造', '發', '展', '進', '步', '成', '功', '夢', '想'],
+        words: ['創造', '發展', '進步', '成功', '夢想', '希望'],
+        phrases: ['創造', '發展', '進步', '夢想']
+      },
+      5: {
+        characters: ['哲', '學', '科', '技', '文', '化', '藝', '術', '歷', '史'],
+        words: ['哲學', '科技', '文化', '藝術', '歷史', '知識'],
+        phrases: ['哲學', '科技', '文化', '知識']
+      },
+      6: {
+        characters: ['邏', '輯', '思', '維', '創', '新', '探', '索', '研', '究'],
+        words: ['邏輯', '思維', '創新', '探索', '研究', '學習'],
+        phrases: ['邏輯', '思維', '創新', '研究']
+      }
     };
     
-    const availableWords = fallbackWords[grade] || fallbackWords[3];
-    const unusedWords = availableWords.filter(word => !usedSet.has(word));
-    
-    // 如果沒有未使用的字，就從所有字中隨機選擇
-    const wordsToUse = unusedWords.length > 0 ? unusedWords : availableWords;
-    
+    const content = fallbackContent[grade] || fallbackContent[3];
     const tasks: IDailyTask[] = [];
-    const selectedWords = wordsToUse.slice(0, 3); // 選擇最多3個字
     
-    selectedWords.forEach((word) => {
-      const strokes = this.estimateStrokes(word);
-      // 更嚴格的練習次數要求（至少5次）
-      const repetitions = Math.max(5, Math.min(10, Math.ceil(strokes / 2)));
-      
-      // 使用新的獎勵計算標準：3 + 難度加成 + 次數加成，上限8
-      let reward = 3; // 基礎獎勵
-      
-      // 難度加成（8-12劃+1, 13-16劃+2, 17+劃+3）
-      if (strokes >= 17) reward += 3;
-      else if (strokes >= 13) reward += 2;
-      else if (strokes >= 8) reward += 1;
-      
-      // 次數加成（5-7次+1, 8-10次+2）
-      if (repetitions >= 8) reward += 2;
-      else if (repetitions >= 5) reward += 1;
-      
-      // 上限8學習幣
-      reward = Math.min(reward, 8);
-      
-      tasks.push({
-        id: uuidv4(),
-        date,
-        content: word,
-        type: 'character',
-        details: { strokes, repetitions },
-        status: 'pending',
-        reward,
-        completedAt: null,
-      });
+    // 生成 1 個單字任務
+    const unusedChars = content.characters.filter(char => !usedSet.has(char));
+    const charToUse = unusedChars.length > 0 ? unusedChars[0] : content.characters[0];
+    
+    const strokes = this.estimateStrokes(charToUse);
+    const repetitions = Math.max(5, Math.min(10, Math.ceil(strokes / 2)));
+    let charReward = 3;
+    
+    if (strokes >= 20) charReward += 4;
+    else if (strokes >= 17) charReward += 3;
+    else if (strokes >= 13) charReward += 2;
+    else if (strokes >= 8) charReward += 1;
+    
+    if (repetitions >= 9) charReward += 3;
+    else if (repetitions >= 8) charReward += 2;
+    else if (repetitions >= 5) charReward += 1;
+    
+    charReward = Math.min(charReward, 10);
+    
+    tasks.push({
+      id: uuidv4(),
+      date,
+      content: charToUse,
+      type: 'character',
+      details: { strokes, repetitions },
+      status: 'pending',
+      reward: charReward,
+      completedAt: null,
+    });
+    
+    // 生成 1 個詞語任務
+    const unusedWords = content.words.filter(word => !usedSet.has(word));
+    const wordToUse = unusedWords.length > 0 ? unusedWords[0] : content.words[0];
+    
+    const wordReward = this.calculateWordReward(wordToUse);
+    const wordRepetitions = Math.max(5, Math.min(8, wordToUse.length * 3));
+    
+    tasks.push({
+      id: uuidv4(),
+      date,
+      content: wordToUse,
+      type: 'word',
+      details: { repetitions: wordRepetitions },
+      status: 'pending',
+      reward: wordReward,
+      completedAt: null,
+    });
+    
+    // 生成 1 個造句任務
+    const unusedPhrases = content.phrases.filter(phrase => !usedSet.has(phrase));
+    const phraseToUse = unusedPhrases.length > 0 ? unusedPhrases[0] : content.phrases[0];
+    
+    const phraseReward = this.calculatePhraseReward(phraseToUse);
+    
+    tasks.push({
+      id: uuidv4(),
+      date,
+      content: phraseToUse,
+      type: 'phrase',
+      details: { sentence: `請用「${phraseToUse}」造一個完整的句子，要能表達出詞語的意思。` },
+      status: 'pending',
+      reward: phraseReward,
+      completedAt: null,
     });
     
     return tasks;
   }
 
   // 新增：估算字的筆劃數（擴展更多較難字詞）
+  // 新增：計算詞語練習獎勵
+  private static calculateWordReward(word: string): number {
+    let reward = 5; // 基礎獎勵（比單字高）
+    
+    // 計算詞語總筆畫數
+    const totalStrokes = Array.from(word).reduce((sum, char) => {
+      return sum + this.estimateStrokes(char);
+    }, 0);
+    
+    // 根據總筆畫數加成
+    if (totalStrokes >= 30) reward += 2;      // 30+ 筆畫：+2
+    else if (totalStrokes >= 25) reward += 1; // 25-29 筆畫：+1
+    
+    return Math.min(reward, 9); // 詞語練習上限 9
+  }
+
+  // 新增：計算造句練習獎勵
+  private static calculatePhraseReward(phrase: string): number {
+    let reward = 6; // 基礎獎勵最高（認知難度最高）
+    
+    // 評估詞語複雜度（根據長度和筆畫）
+    const totalStrokes = Array.from(phrase).reduce((sum, char) => {
+      return sum + this.estimateStrokes(char);
+    }, 0);
+    const wordLength = phrase.length;
+    
+    // 複雜度加成
+    if (totalStrokes >= 25 || wordLength >= 3) reward += 2; // 高複雜度：+2
+    else if (totalStrokes >= 18 || wordLength >= 2) reward += 1; // 中複雜度：+1
+    
+    return Math.min(reward, 10); // 造句練習上限 10
+  }
+
   private static estimateStrokes(char: string): number {
     const strokeMap: Record<string, number> = {
       // 基礎字

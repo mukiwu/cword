@@ -287,7 +287,7 @@ const ProfileSetup: React.FC = () => {
                     }`}
                     onClick={() => setFormData(prev => ({ ...prev, age: 13 }))}
                   >
-                    其他
+                    超過 12 歲
                   </button>
                 </div>
               </div>

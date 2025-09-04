@@ -656,7 +656,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                   {task.content}
                 </div>
                 <div className="parchment-bg rounded-lg p-4 mb-4">
-                  <p className="text-yellow-800 font-medium mb-2">
+                  <p className="text-yellow-800 font-medium mb-0">
                     📝 {task.details.sentence}
                   </p>
                 </div>
@@ -751,8 +751,18 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
           <div className="mb-6 parchment-bg rounded-lg p-4">
             <h4 className="font-bold text-yellow-800 mb-2">📋 練習要求：</h4>
             <div className="text-yellow-700 space-y-1">
-              <p>• 請練習書寫 <strong>{task.details.repetitions || 5}</strong> 次</p>
-              <p>• 注意筆順和字型結構</p>
+              {task.type === 'phrase' ? (
+                <>
+                  <p>• 請用「<strong>{task.content}</strong>」造一個完整的句子</p>
+                  <p>• 句子要有完整的主語和謂語</p>
+                  <p>• 要能正確表達詞語的意思</p>
+                </>
+              ) : (
+                <>
+                  <p>• 請練習書寫 <strong>{task.details.repetitions || 5}</strong> 次</p>
+                  <p>• 注意筆順和字型結構</p>
+                </>
+              )}
               <p>• 完成後可獲得 <strong className="text-yellow-600">{task.reward}</strong> 學習幣</p>
             </div>
           </div>
