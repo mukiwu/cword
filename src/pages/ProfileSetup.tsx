@@ -145,37 +145,37 @@ const ProfileSetup: React.FC = () => {
       id: 'warrior', 
       name: '勇敢戰士', 
       description: '勇敢無畏',
-      svgPath: '/cword/src/assets/avatars/warrior.svg'
+      svgPath: `${import.meta.env.BASE_URL}src/assets/avatars/warrior.svg`
     },
     { 
       id: 'mage', 
       name: '聰明魔法師', 
       description: '智慧過人',
-      svgPath: '/cword/src/assets/avatars/mage.svg'
+      svgPath: `${import.meta.env.BASE_URL}src/assets/avatars/mage.svg`
     },
     { 
       id: 'archer', 
       name: '神射手', 
       description: '百發百中',
-      svgPath: '/cword/src/assets/avatars/archer.svg'
+      svgPath: `${import.meta.env.BASE_URL}src/assets/avatars/archer.svg`
     },
     { 
       id: 'healer', 
       name: '治療師', 
       description: '溫柔善良',
-      svgPath: '/cword/src/assets/avatars/healer.svg'
+      svgPath: `${import.meta.env.BASE_URL}src/assets/avatars/healer.svg`
     },
     { 
       id: 'explorer', 
       name: '探險家', 
       description: '好奇心強',
-      svgPath: '/cword/src/assets/avatars/explorer.svg'
+      svgPath: `${import.meta.env.BASE_URL}src/assets/avatars/explorer.svg`
     },
     { 
       id: 'scholar', 
       name: '學者', 
       description: '博學多聞',
-      svgPath: '/cword/src/assets/avatars/scholar.svg'
+      svgPath: `${import.meta.env.BASE_URL}src/assets/avatars/scholar.svg`
     },
   ];
 

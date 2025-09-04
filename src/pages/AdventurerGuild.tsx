@@ -320,7 +320,7 @@ const AdventurerGuild: React.FC = () => {
                 rgba(0, 0, 0, 0.4),
                 rgba(0, 0, 0, 0.4)
               ),
-              url('/cword/bg.jpg')
+              url('${import.meta.env.BASE_URL}bg.jpg')
             `,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
@@ -350,7 +350,7 @@ const AdventurerGuild: React.FC = () => {
               rgba(0, 0, 0, 0.4),
               rgba(0, 0, 0, 0.4)
             ),
-            url('/cword/bg.jpg')
+            url('${import.meta.env.BASE_URL}bg.jpg')
           `,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
@@ -382,7 +382,7 @@ const AdventurerGuild: React.FC = () => {
             <div className="w-12 h-12 bg-gray-100 rounded-lg p-1 flex items-center justify-center border-2 border-yellow-600">
               {userProfile?.avatarId ? (
                 <img 
-                  src={`/cword/src/assets/avatars/${userProfile.avatarId}.svg`} 
+                  src={`${import.meta.env.BASE_URL}src/assets/avatars/${userProfile.avatarId}.svg`} 
                   alt={`Avatar ${userProfile.avatarId}`}
                   className="w-full h-full object-contain"
                   style={{ imageRendering: 'pixelated' }}

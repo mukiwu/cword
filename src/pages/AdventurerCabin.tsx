@@ -181,7 +181,7 @@ const AdventurerCabin: React.FC = () => {
       return (
         <div className="w-16 h-16 bg-gray-100 rounded-lg p-2 flex items-center justify-center border-2 border-yellow-600">
           <img 
-            src={`/cword/src/assets/avatars/${avatarId}.svg`} 
+            src={`${import.meta.env.BASE_URL}src/assets/avatars/${avatarId}.svg`} 
             alt={`Avatar ${avatarId}`}
             className="w-full h-full object-contain"
             style={{ imageRendering: 'pixelated' }}
@@ -300,7 +300,7 @@ const AdventurerCabin: React.FC = () => {
         <style>{styles}</style>
         <div className="min-h-screen flex items-center justify-center"
              style={{
-               backgroundImage: `url('/cword/bg.jpg')`,
+               backgroundImage: `url('${import.meta.env.BASE_URL}bg.jpg')`,
                backgroundSize: 'cover',
                backgroundPosition: 'center',
                backgroundAttachment: 'fixed'
@@ -318,7 +318,7 @@ const AdventurerCabin: React.FC = () => {
       <style>{styles}</style>
       <div className="min-h-screen p-4"
            style={{
-             backgroundImage: `url('/cword/bg.jpg')`,
+             backgroundImage: `url('${import.meta.env.BASE_URL}bg.jpg')`,
              backgroundSize: 'cover',
              backgroundPosition: 'center',
              backgroundAttachment: 'fixed'
