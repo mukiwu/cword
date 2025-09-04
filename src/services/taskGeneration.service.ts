@@ -19,7 +19,9 @@ export class TaskGenerationService {
       
       const existingTasks = await this.getTasksForDate(today);
       if (existingTasks.length > 0) {
-        return existingTasks;
+        console.log(`今日已有 ${existingTasks.length} 個任務，不重複生成`);
+        // 如果任務數量超過3個，只返回前3個
+        return existingTasks.slice(0, 3);
       }
 
       // Build request for AI service with historical data
@@ -72,11 +74,28 @@ export class TaskGenerationService {
         ];
       }
 
-      // 如果仍然沒有足夠的任務，生成一些備用任務
-      if (finalTasks.length === 0) {
-        console.warn('無法生成唯一任務，使用備用任務');
-        finalTasks = await this.generateFallbackTasks(today, userProfile.age);
+      // 如果任務數量不足3個，補充備用任務
+      if (finalTasks.length < 3) {
+        console.warn(`任務數量不足(${finalTasks.length}/3)，補充備用任務`);
+        const fallbackTasks = await this.generateFallbackTasks(today, userProfile.age);
+        
+        // 只添加需要的數量，並避免重複
+        const needed = 3 - finalTasks.length;
+        const usedContents = new Set(finalTasks.map(t => t.content));
+        
+        for (const task of fallbackTasks) {
+          if (finalTasks.length >= 3) break;
+          if (!usedContents.has(task.content)) {
+            finalTasks.push(task);
+            usedContents.add(task.content);
+          }
+        }
       }
+
+      // 確保只保留前3個任務
+      finalTasks = finalTasks.slice(0, 3);
+
+      console.log(`準備保存 ${finalTasks.length} 個今日任務`);
 
       // Save tasks to database
       for (const task of finalTasks) {
@@ -100,7 +119,23 @@ export class TaskGenerationService {
   static async getTodaysTasks(): Promise<IDailyTask[]> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    return await this.getTasksForDate(today);
+    const tasks = await this.getTasksForDate(today);
+    
+    // 如果任務數量超過3個，清理多餘的任務
+    if (tasks.length > 3) {
+      console.warn(`發現 ${tasks.length} 個今日任務，清理多餘任務`);
+      const tasksToKeep = tasks.slice(0, 3);
+      const tasksToRemove = tasks.slice(3);
+      
+      // 刪除多餘的任務
+      for (const task of tasksToRemove) {
+        await DatabaseService.delete('dailyTasks', task.id);
+      }
+      
+      return tasksToKeep;
+    }
+    
+    return tasks;
   }
 
   static async startTask(taskId: string): Promise<IDailyTask> {
@@ -193,41 +228,62 @@ export class TaskGenerationService {
     const historicalContents = await this.getAllHistoricalContents();
     const usedSet = new Set(historicalContents);
     
-    // 備用內容庫
+    // 基於台灣教育部課綱的超前學習內容庫
     const fallbackContent: Record<number, { 
       characters: string[], 
       words: string[], 
-      phrases: string[] 
+      phrases: string[],
+      strokeRange: [number, number],
+      difficulty: string
     }> = {
-      1: {
-        characters: ['春', '夏', '秋', '冬', '花', '草', '樹', '鳥', '雲', '雨'],
-        words: ['春天', '夏日', '秋風', '冬雪', '花園', '草地'],
-        phrases: ['春天', '花朵', '小鳥', '白雲']
+      1: { // age 6, 學習2年級內容
+        characters: ['明', '朋', '友', '故', '事', '新', '舊', '左', '右', '方'],
+        words: ['朋友', '故事', '新年', '左右', '方向', '時候'],
+        phrases: ['朋友', '故事', '新年', '時候'],
+        strokeRange: [5, 10],
+        difficulty: '二年級程度'
       },
-      2: {
-        characters: ['聰', '明', '勇', '敢', '溫', '暖', '清', '楚', '美', '麗'],
-        words: ['聰明', '勇敢', '溫暖', '清楚', '美麗', '快樂'],
-        phrases: ['聰明', '勇敢', '溫暖', '美麗']
+      2: { // age 8, 學習3年級內容
+        characters: ['班', '級', '同', '學', '老', '師', '教', '室', '功', '課'],
+        words: ['班級', '同學', '老師', '教室', '功課', '學習'],
+        phrases: ['同學', '老師', '學習', '功課'],
+        strokeRange: [8, 13],
+        difficulty: '三年級程度'
       },
-      3: {
-        characters: ['智', '慧', '堅', '強', '優', '秀', '認', '真', '負', '責'],
-        words: ['智慧', '堅強', '優秀', '認真', '負責', '努力'],
-        phrases: ['智慧', '堅強', '優秀', '努力']
+      3: { // age 9, 學習4年級內容  
+        characters: ['環', '境', '保', '護', '污', '染', '清', '潔', '資', '源'],
+        words: ['環境', '保護', '污染', '清潔', '資源', '回收'],
+        phrases: ['環境', '保護', '污染', '資源'],
+        strokeRange: [10, 16],
+        difficulty: '四年級程度'
       },
-      4: {
-        characters: ['創', '造', '發', '展', '進', '步', '成', '功', '夢', '想'],
-        words: ['創造', '發展', '進步', '成功', '夢想', '希望'],
-        phrases: ['創造', '發展', '進步', '夢想']
+      4: { // age 10, 學習5年級內容
+        characters: ['民', '主', '自', '由', '平', '等', '正', '義', '法', '律'],
+        words: ['民主', '自由', '平等', '正義', '法律', '權利'],
+        phrases: ['民主', '自由', '正義', '權利'],
+        strokeRange: [13, 20],
+        difficulty: '五年級程度'
       },
-      5: {
-        characters: ['哲', '學', '科', '技', '文', '化', '藝', '術', '歷', '史'],
-        words: ['哲學', '科技', '文化', '藝術', '歷史', '知識'],
-        phrases: ['哲學', '科技', '文化', '知識']
+      5: { // age 11, 學習6年級內容
+        characters: ['科', '學', '技', '術', '發', '明', '創', '新', '實', '驗'],
+        words: ['科學', '技術', '發明', '創新', '實驗', '研究'],
+        phrases: ['科學', '技術', '創新', '研究'],
+        strokeRange: [16, 25],
+        difficulty: '六年級程度'
       },
-      6: {
-        characters: ['邏', '輯', '思', '維', '創', '新', '探', '索', '研', '究'],
-        words: ['邏輯', '思維', '創新', '探索', '研究', '學習'],
-        phrases: ['邏輯', '思維', '創新', '研究']
+      6: { // age 12, 學習6年級內容（標準）
+        characters: ['哲', '學', '思', '想', '邏', '輯', '推', '理', '分', '析'],
+        words: ['哲學', '思想', '邏輯', '推理', '分析', '判斷'],
+        phrases: ['哲學', '邏輯', '分析', '判斷'],
+        strokeRange: [16, 25],
+        difficulty: '六年級程度'
+      },
+      7: { // age 12+, 學習6年級進階（冷僻字）
+        characters: ['璀', '璨', '磅', '礴', '澎', '湃', '蒼', '穹', '翱', '翔'],
+        words: ['璀璨', '磅礴', '澎湃', '蒼穹', '翱翔', '浩瀚'],
+        phrases: ['璀璨', '磅礴', '蒼穹', '翱翔'],
+        strokeRange: [18, 30],
+        difficulty: '六年級進階（含冷僻字）'
       }
     };
     
@@ -240,16 +296,32 @@ export class TaskGenerationService {
     
     const strokes = this.estimateStrokes(charToUse);
     const repetitions = Math.max(5, Math.min(10, Math.ceil(strokes / 2)));
-    let charReward = 3;
+    const [minStroke, maxStroke] = content.strokeRange;
     
-    if (strokes >= 20) charReward += 4;
-    else if (strokes >= 17) charReward += 3;
-    else if (strokes >= 13) charReward += 2;
-    else if (strokes >= 8) charReward += 1;
+    // 基於年級筆畫標準的獎勵計算
+    let charReward = 3; // 基礎獎勵
     
+    // 筆畫範圍適配獎勵
+    if (strokes < minStroke) {
+      charReward -= 1; // 低於年級標準：-1
+    } else if (strokes > maxStroke) {
+      charReward += 2; // 超出年級標準（挑戰性高）：+2
+    } else {
+      charReward += 1; // 符合年級標準：+1
+    }
+    
+    // 傳統難度加成（保留原有邏輯）
+    if (strokes >= 20) charReward += 3;
+    else if (strokes >= 17) charReward += 2;
+    else if (strokes >= 13) charReward += 1;
+    
+    // 次數加成
     if (repetitions >= 9) charReward += 3;
     else if (repetitions >= 8) charReward += 2;
     else if (repetitions >= 5) charReward += 1;
+    
+    // 六年級進階額外獎勵
+    if (grade === 7) charReward += 1;
     
     charReward = Math.min(charReward, 10);
     
@@ -268,7 +340,7 @@ export class TaskGenerationService {
     const unusedWords = content.words.filter(word => !usedSet.has(word));
     const wordToUse = unusedWords.length > 0 ? unusedWords[0] : content.words[0];
     
-    const wordReward = this.calculateWordReward(wordToUse);
+    const wordReward = this.calculateWordReward(wordToUse, grade, content.strokeRange);
     const wordRepetitions = Math.max(5, Math.min(8, wordToUse.length * 3));
     
     tasks.push({
@@ -286,7 +358,7 @@ export class TaskGenerationService {
     const unusedPhrases = content.phrases.filter(phrase => !usedSet.has(phrase));
     const phraseToUse = unusedPhrases.length > 0 ? unusedPhrases[0] : content.phrases[0];
     
-    const phraseReward = this.calculatePhraseReward(phraseToUse);
+    const phraseReward = this.calculatePhraseReward(phraseToUse, grade, content.strokeRange);
     
     tasks.push({
       id: uuidv4(),
@@ -303,8 +375,8 @@ export class TaskGenerationService {
   }
 
   // 新增：估算字的筆劃數（擴展更多較難字詞）
-  // 新增：計算詞語練習獎勵
-  private static calculateWordReward(word: string): number {
+  // 新增：計算詞語練習獎勵（考慮年級標準）
+  private static calculateWordReward(word: string, grade: number, strokeRange: [number, number]): number {
     let reward = 5; // 基礎獎勵（比單字高）
     
     // 計算詞語總筆畫數
@@ -312,15 +384,28 @@ export class TaskGenerationService {
       return sum + this.estimateStrokes(char);
     }, 0);
     
-    // 根據總筆畫數加成
+    const [minStroke, maxStroke] = strokeRange;
+    const averageStrokePerChar = totalStrokes / word.length;
+    
+    // 年級適配獎勵
+    if (averageStrokePerChar < minStroke) {
+      reward -= 1; // 平均筆畫低於年級標準
+    } else if (averageStrokePerChar > maxStroke) {
+      reward += 1; // 平均筆畫超出年級標準（挑戰性）
+    }
+    
+    // 傳統複雜度加成
     if (totalStrokes >= 30) reward += 2;      // 30+ 筆畫：+2
     else if (totalStrokes >= 25) reward += 1; // 25-29 筆畫：+1
+    
+    // 六年級進階額外獎勵
+    if (grade === 7) reward += 1;
     
     return Math.min(reward, 9); // 詞語練習上限 9
   }
 
-  // 新增：計算造句練習獎勵
-  private static calculatePhraseReward(phrase: string): number {
+  // 新增：計算造句練習獎勵（考慮年級標準）
+  private static calculatePhraseReward(phrase: string, grade: number, strokeRange: [number, number]): number {
     let reward = 6; // 基礎獎勵最高（認知難度最高）
     
     // 評估詞語複雜度（根據長度和筆畫）
@@ -328,10 +413,22 @@ export class TaskGenerationService {
       return sum + this.estimateStrokes(char);
     }, 0);
     const wordLength = phrase.length;
+    const [minStroke, maxStroke] = strokeRange;
+    const averageStrokePerChar = totalStrokes / wordLength;
     
-    // 複雜度加成
+    // 年級適配獎勵
+    if (averageStrokePerChar < minStroke) {
+      reward -= 1; // 平均筆畫低於年級標準
+    } else if (averageStrokePerChar > maxStroke) {
+      reward += 1; // 平均筆畫超出年級標準（挑戰性）
+    }
+    
+    // 傳統複雜度加成
     if (totalStrokes >= 25 || wordLength >= 3) reward += 2; // 高複雜度：+2
     else if (totalStrokes >= 18 || wordLength >= 2) reward += 1; // 中複雜度：+1
+    
+    // 六年級進階額外獎勵
+    if (grade === 7) reward += 1;
     
     return Math.min(reward, 10); // 造句練習上限 10
   }
@@ -344,23 +441,42 @@ export class TaskGenerationService {
       '秋': 9, '冬': 5, '花': 7, '草': 9, '樹': 16, '鳥': 11,
       '雲': 12, '雨': 8,
       
-      // 二年級較難字詞（8歲）
-      '聰': 17, '明': 8, '勇': 9, '敢': 11, '溫': 12, '暖': 13,
-      '清': 11, '楚': 13, '美': 9, '麗': 19,
+      // 二年級程度 (5-10筆畫)
+      '明': 8, '朋': 8, '友': 4, '故': 9, '事': 8, '新': 13,
+      '舊': 18, '左': 5, '右': 5, '方': 4,
       
-      // 中年級字詞
-      '智': 12, '慧': 15, '堅': 11, '強': 12, '優': 17, '秀': 7,
-      '認': 14, '真': 10, '負': 9, '責': 11,
+      // 三年級程度 (8-13筆畫)
+      '班': 10, '級': 9, '同': 6, '學': 16, '老': 6, '師': 10,
+      '教': 11, '室': 9, '功': 5, '課': 15,
       
-      // 高年級字詞
-      '創': 12, '造': 10, '發': 12, '展': 10, '進': 11, '步': 7,
-      '成': 6, '功': 5, '夢': 13, '想': 13, '哲': 10, '科': 9,
-      '技': 7, '文': 4, '化': 4, '藝': 13, '術': 11, '歷': 16,
-      '史': 5, '邏': 17, '輯': 14, '思': 9, '維': 14, '新': 13,
-      '探': 11, '索': 10, '研': 9, '究': 7
+      // 四年級程度 (10-16筆畫)
+      '環': 17, '境': 14, '保': 9, '護': 20, '污': 6, '染': 9,
+      '清': 11, '潔': 15, '資': 13, '源': 13,
+      
+      // 五年級程度 (13-20筆畫)
+      '民': 5, '主': 5, '自': 6, '由': 5, '平': 5, '等': 12,
+      '正': 5, '義': 13, '法': 8, '律': 9,
+      
+      // 六年級程度 (16-25筆畫)  
+      '科': 9, '技': 7, '術': 11, '發': 12, '明': 8, '創': 12,
+      '實': 14, '驗': 23, '哲': 10, '思': 9, '想': 13, '邏': 17,
+      '輯': 14, '推': 11, '理': 11, '分': 4, '析': 8, '判': 7,
+      '斷': 18,
+      
+      // 六年級進階（冷僻字，18-30筆畫）
+      '璀': 15, '璨': 17, '磅': 15, '礴': 14, '澎': 15, '湃': 12,
+      '蒼': 13, '穹': 8, '翱': 18, '翔': 12, '浩': 10, '瀚': 19,
+      
+      // 其他常用字
+      '聰': 17, '勇': 9, '敢': 11, '溫': 12, '暖': 13, '楚': 13,
+      '美': 9, '麗': 19, '智': 12, '慧': 15, '堅': 11, '強': 12,
+      '優': 17, '秀': 7, '認': 14, '真': 10, '負': 9, '責': 11,
+      '造': 10, '展': 10, '進': 11, '步': 7, '成': 6, '功': 5,
+      '夢': 13, '文': 4, '化': 4, '藝': 13, '歷': 16, '史': 5,
+      '維': 14, '探': 11, '索': 10, '研': 9, '究': 7
     };
     
-    return strokeMap[char] || 10; // 默認提升至10劃
+    return strokeMap[char] || 12; // 默認12劃
   }
 
   private static async updateWeeklyLedger(reward: number, taskId: string): Promise<void> {

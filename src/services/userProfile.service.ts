@@ -30,7 +30,9 @@ export class UserProfileService {
   }
 
   static getGradeFromAge(age: number): number {
-    // 8歲對應國小二年級，以此類推
-    return Math.max(1, Math.min(6, age - 6));
+    // 超前學習：每個年齡學習高一年級的內容
+    // 6歲學習2年級內容，8歲學習3年級內容，依此類推
+    const actualGrade = Math.max(1, Math.min(6, age - 6));
+    return Math.min(7, actualGrade + 1); // 超前一年級，最高到7(6年級進階)
   }
 }
