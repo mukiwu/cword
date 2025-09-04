@@ -8,14 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 // 添加自定義 CSS 樣式 - 使用 Tailwind 3.4.16 的配置和語法
 const styles = `
   :root {
-    --primary: #57b5e7;
-    --secondary: #8dd3c7;
+    --primary: #D4AF37;
+    --secondary: #8B4513;
   }
 
   .parchment-bg {
-    background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 2px solid #8B4513;
   }
 
   .avatar-card {
@@ -23,14 +22,20 @@ const styles = `
     cursor: pointer;
   }
 
+  .avatar-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #D2691E;
+  }
+
   .avatar-card:hover {
     transform: scale(1.05);
-    box-shadow: 0 8px 25px rgba(87, 181, 231, 0.3);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
   }
 
   .avatar-card.selected {
     transform: scale(1.1);
-    box-shadow: 0 0 0 3px #57b5e7;
+    box-shadow: 0 0 0 3px #D4AF37;
+    background: rgba(212, 175, 55, 0.1);
     animation: bounce 0.5s ease;
   }
 
@@ -47,16 +52,18 @@ const styles = `
   }
 
   .age-button {
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #D2691E !important;
     transition: all 0.3s ease;
   }
 
   .age-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(87, 181, 231, 0.3);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
   }
 
   .age-button.selected {
-    background: #57b5e7 !important;
+    background: #D4AF37 !important;
     color: white !important;
     transform: translateY(-2px);
   }
@@ -89,11 +96,14 @@ const styles = `
   }
 
   .input-field {
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #D2691E;
     transition: all 0.3s ease;
   }
 
   .input-field:focus {
-    box-shadow: 0 0 0 3px rgba(87, 181, 231, 0.3);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.4);
+    border-color: #D4AF37;
     transform: translateY(-1px);
   }
 
@@ -115,15 +125,15 @@ const styles = `
 
   /* Tailwind 3.4.16 Primary Color Definition */
   .text-primary {
-    color: #57b5e7;
+    color: #D4AF37;
   }
 
   .bg-primary {
-    background-color: #57b5e7;
+    background-color: #D4AF37;
   }
 
   .border-primary {
-    border-color: #57b5e7;
+    border-color: #D4AF37;
   }
 `;
 
@@ -217,33 +227,36 @@ const ProfileSetup: React.FC = () => {
       <style>{styles}</style>
       <div className="flex items-center justify-center min-h-screen p-4" 
            style={{
-             background: 'linear-gradient(135deg, #fef7e0 0%, #f9f1e6 100%)',
              backgroundImage: `
-               radial-gradient(circle at 20% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
-               radial-gradient(circle at 80% 20%, rgba(135, 206, 235, 0.1) 0%, transparent 50%),
-               radial-gradient(circle at 40% 80%, rgba(255, 182, 193, 0.1) 0%, transparent 50%)
+               linear-gradient(
+                 rgba(0, 0, 0, 0.3),
+                 rgba(0, 0, 0, 0.3)
+               ),
+               url('${import.meta.env.BASE_URL}setup.jpg')
              `,
+             backgroundSize: 'cover',
+             backgroundPosition: 'center',
+             backgroundAttachment: 'fixed',
              fontFamily: "'PingFang TC', 'Microsoft JhengHei', sans-serif"
            }}>
         <div className="w-full max-w-2xl mx-auto">
           {/* Header */}
           <div className="text-center mb-6">
-            <h1 className="text-4xl text-primary mb-4">🏝️ 生字冒險島</h1>
-            <h2 className="text-3xl font-bold text-gray-800 mb-2">準備開始你的冒險旅程！</h2>
-            <p className="text-lg text-gray-600">和我們說說你是誰吧！</p>
+            <h1 className="text-4xl text-primary mb-4 drop-shadow-lg font-bold">🏝️ 生字冒險島</h1>
+            <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">準備開始你的冒險旅程！</h2>
           </div>
 
           {/* Main Card */}
           <div className="parchment-bg rounded-3xl p-6 mb-6">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">創建你的冒險檔案</h3>
-              <p className="text-gray-600">讓我們一起開始這段精彩的學習冒險！</p>
+              <h3 className="text-2xl font-bold text-neutral-50 mb-2">創建你的冒險檔案</h3>
+              <p className="text-neutral-50">讓我們一起開始這段精彩的學習冒險！</p>
             </div>
             
             <div className="space-y-6">
               {/* 姓名輸入 */}
               <div className="space-y-3">
-                <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                <label className="flex text-lg font-semibold text-neutral-50 items-center gap-2">
                   <div className="w-6 h-6 flex items-center justify-center">
                     <i className="ri-pencil-line text-primary"></i>
                   </div>
@@ -254,14 +267,14 @@ const ProfileSetup: React.FC = () => {
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="輸入你的暱稱..."
-                  className="input-field w-full px-4 py-2.5 text-base border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none bg-white"
+                  className="input-field w-full px-4 py-2.5 text-base rounded-lg focus:outline-none"
                   maxLength={20}
                 />
               </div>
 
               {/* 年齡選擇 */}
               <div className="space-y-3">
-                <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                <label className="text-lg font-semibold text-neutral-50 flex items-center gap-2">
                   <div className="w-6 h-6 flex items-center justify-center">
                     <i className="ri-cake-2-line text-primary"></i>
                   </div>
@@ -272,7 +285,7 @@ const ProfileSetup: React.FC = () => {
                     <button
                       key={age}
                       type="button"
-                      className={`age-button px-3 py-2 text-base font-semibold border-2 border-gray-200 rounded-lg bg-white whitespace-nowrap ${
+                      className={`age-button px-3 py-2 text-base font-semibold rounded-lg whitespace-nowrap ${
                         formData.age === age ? 'selected' : ''
                       }`}
                       onClick={() => setFormData(prev => ({ ...prev, age }))}
@@ -282,7 +295,7 @@ const ProfileSetup: React.FC = () => {
                   ))}
                   <button
                     type="button"
-                    className={`age-button px-3 py-2 text-base font-semibold border-2 border-gray-200 rounded-lg bg-white whitespace-nowrap ${
+                    className={`age-button px-3 py-2 text-base font-semibold rounded-lg whitespace-nowrap ${
                       formData.age > 12 ? 'selected' : ''
                     }`}
                     onClick={() => setFormData(prev => ({ ...prev, age: 13 }))}
@@ -294,7 +307,7 @@ const ProfileSetup: React.FC = () => {
 
               {/* 頭像選擇 */}
               <div className="space-y-3">
-                <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                <label className="text-lg font-semibold text-neutral-50 flex items-center gap-2">
                   <div className="w-6 h-6 flex items-center justify-center">
                     <i className="ri-user-smile-line text-primary"></i>
                   </div>
@@ -304,7 +317,7 @@ const ProfileSetup: React.FC = () => {
                   {avatars.map(avatar => (
                     <div
                       key={avatar.id}
-                      className={`avatar-card p-3 border-2 border-gray-200 rounded-xl bg-white text-center ${
+                      className={`avatar-card p-3 rounded-xl text-center ${
                         formData.avatarId === avatar.id ? 'selected' : ''
                       }`}
                       onClick={() => setFormData(prev => ({ ...prev, avatarId: avatar.id }))}
@@ -317,8 +330,8 @@ const ProfileSetup: React.FC = () => {
                           style={{ imageRendering: 'pixelated' }}
                         />
                       </div>
-                      <h4 className="font-semibold text-gray-800 text-sm">{avatar.name}</h4>
-                      <p className="text-xs text-gray-600">{avatar.description}</p>
+                      <h4 className="font-semibold text-black text-sm">{avatar.name}</h4>
+                      <p className="text-yellow-700">{avatar.description}</p>
                     </div>
                   ))}
                 </div>
@@ -326,7 +339,7 @@ const ProfileSetup: React.FC = () => {
 
               {/* AI 助手選擇 */}
               <div className="space-y-3">
-                <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                <label className="text-lg font-semibold text-neutral-50 flex items-center gap-2">
                   <div className="w-6 h-6 flex items-center justify-center">
                     <i className="ri-robot-line text-primary"></i>
                   </div>
@@ -336,7 +349,7 @@ const ProfileSetup: React.FC = () => {
                   value={formData.aiModel} 
                   onValueChange={(value: AIModel) => setFormData(prev => ({ ...prev, aiModel: value }))}
                 >
-                  <SelectTrigger className="text-base px-4 py-2.5 rounded-lg border-2">
+                  <SelectTrigger className="text-base px-4 py-2.5 rounded-lg border-2 border-yellow-600 text-white">
                     <SelectValue placeholder="選擇 AI 助手" />
                   </SelectTrigger>
                   <SelectContent>
@@ -349,7 +362,7 @@ const ProfileSetup: React.FC = () => {
 
               {/* API Key 輸入 */}
               <div className="space-y-3">
-                <label className="block text-lg font-semibold text-gray-700 flex items-center gap-2">
+                <label className="text-lg font-semibold text-neutral-50 flex items-center gap-2">
                   <div className="w-6 h-6 flex items-center justify-center">
                     <i className="ri-key-line text-primary"></i>
                   </div>
@@ -360,9 +373,9 @@ const ProfileSetup: React.FC = () => {
                   value={formData.apiKey}
                   onChange={(e) => setFormData(prev => ({ ...prev, apiKey: e.target.value }))}
                   placeholder="請輸入你的 AI API 金鑰"
-                  className="input-field w-full px-4 py-2.5 text-base border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none bg-white"
+                  className="input-field w-full px-4 py-2.5 text-base rounded-lg focus:outline-none"
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-neutral-50">
                   金鑰將安全地儲存在你的瀏覽器中，不會上傳到伺服器
                 </p>
               </div>
@@ -378,7 +391,7 @@ const ProfileSetup: React.FC = () => {
 
           {/* 提交按鈕 */}
           <div className="text-center">
-            <p className="text-gray-600 mb-4">準備好了嗎？點擊開始你的學習冒險！</p>
+            <p className="text-white mb-4 drop-shadow-md">準備好了嗎？點擊開始你的學習冒險！</p>
             <button
               type="button"
               disabled={!isFormValid || isLoading}
