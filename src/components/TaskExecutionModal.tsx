@@ -446,8 +446,10 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
            style={{
              backgroundColor: 'rgba(0, 0, 0, 0.7)',
              backdropFilter: 'blur(5px)'
-           }}>
-        <div className="parchment-bg rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+           }}
+           onClick={onClose}>
+        <div className="parchment-bg rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+             onClick={(e) => e.stopPropagation()}>
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-yellow-800">
@@ -455,9 +457,12 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
             </h2>
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+              title="關閉視窗"
             >
-              <i className="ri-close-line text-gray-600"></i>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
 
