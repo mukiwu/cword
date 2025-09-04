@@ -82,6 +82,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
   const [loadingError, setLoadingError] = useState<string>('');
   const [totalStrokes, setTotalStrokes] = useState<number[]>([1]);
   const [currentCharIndex, setCurrentCharIndex] = useState(0);
+  const [isLoadingCharacters, setIsLoadingCharacters] = useState(false);
   const writerRefs = useRef<(HTMLDivElement | null)[]>([]);
   
   // 確保 refs 陣列有正確的長度
@@ -125,10 +126,11 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
       const characters = Array.from(task.content);
       console.log('Initializing writers for characters:', characters);
       
-      // 重置狀態
+      // 重置狀態並開始載入
       setLoadingError('');
       setCurrentStep(0);
       setCurrentCharIndex(0);
+      setIsLoadingCharacters(true);
       
       // 等待更長時間確保 DOM 已經渲染和 refs 已經設置
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -228,9 +230,13 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
         writersArray: newWriters.map((w, i) => ({ index: i, writer: !!w }))
       });
       
+      // 載入完成
+      setIsLoadingCharacters(false);
+      
     } catch (error) {
       console.error('Error initializing Hanzi Writers:', error);
       setLoadingError(`初始化筆順動畫失敗`);
+      setIsLoadingCharacters(false);
     }
   };
 
@@ -457,7 +463,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
             </h2>
             <button
               onClick={onClose}
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110 cursor-pointer"
               title="關閉視窗"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -550,8 +556,19 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                           </svg>
                         </div>
                         
+                        {/* Loading 動畫 */}
+                        {isLoadingCharacters && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-95 rounded-lg">
+                            <div className="text-center p-4">
+                              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600 mb-3"></div>
+                              <div className="text-yellow-700 text-sm font-medium mb-1">載入中...</div>
+                              <div className="text-yellow-600 text-xs">正在準備筆順動畫</div>
+                            </div>
+                          </div>
+                        )}
+
                         {/* 錯誤顯示 */}
-                        {loadingError && index === 0 && (
+                        {loadingError && index === 0 && !isLoadingCharacters && (
                           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-lg">
                             <div className="text-center p-4">
                               <div className="text-red-600 text-lg mb-2">⚠️</div>
@@ -573,7 +590,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                   <button
                     onClick={() => handleAnimateCharacter()}
                     disabled={isAnimating}
-                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors text-sm"
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors text-sm cursor-pointer disabled:cursor-not-allowed"
                   >
                     {isAnimating ? '動畫中...' : '完整動畫'}
                   </button>
@@ -585,19 +602,19 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                     <button
                       onClick={() => handleAnimateCharacter()}
                       disabled={isAnimating}
-                      className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 transition-colors text-sm"
+                      className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-400 transition-colors text-sm cursor-pointer disabled:cursor-not-allowed"
                     >
                       {isAnimating ? '動畫中...' : `播放「${Array.from(task.content)[currentCharIndex]}」`}
                     </button>
                     <button
                       onClick={() => handleShowCharacter()}
-                      className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm"
+                      className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm cursor-pointer"
                     >
                       顯示「{Array.from(task.content)[currentCharIndex]}」
                     </button>
                     <button
                       onClick={() => handleHideCharacter()}
-                      className="px-3 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors text-sm"
+                      className="px-3 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors text-sm cursor-pointer"
                     >
                       隱藏「{Array.from(task.content)[currentCharIndex]}」
                     </button>
@@ -607,13 +624,13 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                 {/* 全局控制 */}
                 <button
                   onClick={task.type === 'word' ? handleShowAllCharacters : () => handleShowCharacter()}
-                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                  className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm cursor-pointer"
                 >
                   顯示{task.type === 'word' ? '全部' : '字'}
                 </button>
                 <button
                   onClick={task.type === 'word' ? handleHideAllCharacters : () => handleHideCharacter()}
-                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm cursor-pointer"
                 >
                   隱藏{task.type === 'word' ? '全部' : '字'}
                 </button>
@@ -668,7 +685,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                         <button
                           key={index}
                           onClick={() => handleSelectCharacter(index)}
-                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                             index === currentCharIndex
                               ? 'bg-orange-500 text-white shadow-sm'
                               : 'text-gray-600 hover:bg-gray-100'
@@ -685,7 +702,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                   <button
                     onClick={handleStepPrev}
                     disabled={currentStep === 0 && currentCharIndex === 0}
-                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
                   >
                     上一筆
                   </button>
@@ -710,7 +727,7 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
                   <button
                     onClick={handleStepNext}
                     disabled={isAnimating || (currentCharIndex >= Array.from(task.content).length - 1 && currentStep >= (totalStrokes[currentCharIndex] || 1))}
-                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors cursor-pointer"
                   >
                     {currentCharIndex >= Array.from(task.content).length - 1 && currentStep >= (totalStrokes[currentCharIndex] || 1) ? '筆順完成' : '下一筆'}
                   </button>
@@ -744,13 +761,13 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
           <div className="flex gap-4">
             <button
               onClick={onClose}
-              className="flex-1 bg-gray-500 text-white font-bold py-3 rounded-lg hover:bg-gray-600 transition-colors"
+              className="flex-1 bg-gray-500 text-white font-bold py-3 rounded-lg hover:bg-gray-600 transition-colors cursor-pointer"
             >
               暫時離開
             </button>
             <button
               onClick={onComplete}
-              className="flex-1 wood-texture text-white font-bold py-3 rounded-lg hover:scale-105 transition-transform"
+              className="flex-1 wood-texture text-white font-bold py-3 rounded-lg hover:scale-105 transition-transform cursor-pointer"
             >
               ✅ 完成練習
             </button>
