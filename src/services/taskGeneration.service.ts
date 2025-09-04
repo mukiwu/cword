@@ -25,7 +25,7 @@ export class TaskGenerationService {
       }
 
       // Build request for AI service with historical data
-      const grade = UserProfileService.getGradeFromAge(userProfile.age);
+      const grade = UserProfileService.getLearningGrade(userProfile.age);
       const historicalContents = await this.getAllHistoricalContents();
       
       const request: TaskGenerationRequest = {

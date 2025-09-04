@@ -368,7 +368,7 @@ const AdventurerCabin: React.FC = () => {
                 <h2 className="text-2xl font-bold text-yellow-800 mb-2">{userProfile?.name}</h2>
                 <div className="grid grid-cols-2 gap-4 text-yellow-700">
                   <p><span className="font-semibold">年齡：</span>{userProfile?.age} 歲</p>
-                  <p><span className="font-semibold">年級：</span>國小{UserProfileService.getGradeFromAge(userProfile?.age || 8)}年級</p>
+                  <p><span className="font-semibold">年級：</span>國小{UserProfileService.getDisplayGrade(userProfile?.age || 8)}年級</p>
                   <p><span className="font-semibold">AI 助手：</span>{userProfile?.aiModel?.toUpperCase()}</p>
                   <p><span className="font-semibold">加入時間：</span>{formatDate(userProfile?.createdAt || new Date())}</p>
                 </div>
