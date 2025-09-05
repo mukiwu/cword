@@ -420,6 +420,21 @@ const ProfileSetup: React.FC = () => {
               </div>
             </button>
           </div>
+
+          {/* GitHub 連結 */}
+          <div className="text-center mt-8">
+            <a
+              href="https://github.com/mukiwu/cword"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-white hover:text-yellow-300 transition-colors opacity-80 hover:opacity-100"
+            >
+              <div className="w-5 h-5 flex items-center justify-center">
+                <i className="ri-github-fill text-lg"></i>
+              </div>
+              <span className="text-sm">GitHub - MukiWu</span>
+            </a>
+          </div>
         </div>
       </div>
     </>

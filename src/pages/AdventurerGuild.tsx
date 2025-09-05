@@ -434,13 +434,24 @@ const AdventurerGuild: React.FC = () => {
                 </div>
               </div>
               
-              <button
-                onClick={handleLogout}
-                className="w-10 h-10 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center border-2 border-red-700 transition-colors"
-                title="登出"
-              >
-                <i className="ri-logout-box-line text-white text-lg"></i>
-              </button>
+              <div className="flex items-center gap-2">
+                <a
+                  href="https://github.com/mukiwu/cword"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 bg-gray-800 hover:bg-gray-900 rounded-lg flex items-center justify-center border-2 border-gray-700 transition-colors"
+                  title="GitHub - MukiWu"
+                >
+                  <i className="ri-github-fill text-white text-lg"></i>
+                </a>
+                <button
+                  onClick={handleLogout}
+                  className="w-10 h-10 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center border-2 border-red-700 transition-colors"
+                  title="登出"
+                >
+                  <i className="ri-logout-box-line text-white text-lg"></i>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -480,6 +491,15 @@ const AdventurerGuild: React.FC = () => {
                   </div>
                 )}
               </div>
+              <a
+                href="https://github.com/mukiwu/cword"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-12 h-12 bg-gray-800 hover:bg-gray-900 rounded-lg flex items-center justify-center border-2 border-gray-700 transition-colors"
+                title="GitHub - MukiWu"
+              >
+                <i className="ri-github-fill text-white text-xl"></i>
+              </a>
               <button
                 onClick={handleLogout}
                 className="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center border-2 border-red-700 transition-colors"
