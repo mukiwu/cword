@@ -186,6 +186,25 @@ const AdventurerCabin: React.FC = () => {
     }
   };
 
+  const handleDeleteApiKey = () => {
+    if (confirm('確定要刪除 API Key 嗎？刪除後需要重新設定才能繼續使用 AI 助手。')) {
+      try {
+        // 清除所有可能的 API Key 儲存
+        localStorage.removeItem('ai_api_key');
+        localStorage.removeItem('ai_model');
+        localStorage.removeItem('openai_api_key');
+        localStorage.removeItem('claude_api_key');
+        localStorage.removeItem('gemini_api_key');
+        alert('API Key 已刪除，請重新設定後繼續使用');
+        // 可以選擇重新載入頁面或導向設定頁面
+        window.location.reload();
+      } catch (err) {
+        console.error('Delete API Key failed:', err);
+        alert('刪除 API Key 失敗，請重試');
+      }
+    }
+  };
+
   const getAvailableCoinsForExchange = () => {
     const paidOutWeeks = weeklyHistory.filter(w => w.status === 'paid_out');
     if (paidOutWeeks.length === 0) return 0;
@@ -377,6 +396,15 @@ const AdventurerCabin: React.FC = () => {
                   <p><span className="font-semibold">年級：</span>國小 {UserProfileService.getDisplayGrade(userProfile?.age || 8)} 年級</p>
                   <p><span className="font-semibold">AI 助手：</span>{userProfile?.aiModel?.toUpperCase()}</p>
                   <p><span className="font-semibold">加入時間：</span>{formatDate(userProfile?.createdAt || new Date())}</p>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={handleDeleteApiKey}
+                    className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-lg text-sm transition-colors hover:cursor-pointer"
+                    title="刪除 API Key"
+                  >
+                    刪除 API Key
+                  </button>
                 </div>
               </div>
             </div>

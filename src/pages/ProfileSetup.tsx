@@ -211,9 +211,9 @@ const ProfileSetup: React.FC = () => {
     setError('');
 
     try {
-      // Store API key in session storage
-      sessionStorage.setItem('ai_api_key', formData.apiKey);
-      sessionStorage.setItem('ai_model', formData.aiModel);
+      // Store API key in local storage
+      localStorage.setItem('ai_api_key', formData.apiKey);
+      localStorage.setItem('ai_model', formData.aiModel);
 
       // Create user profile (without API key)
       await UserProfileService.createUser({
