@@ -13,6 +13,10 @@ export default defineConfig(({ command }) => ({
       '@': resolve(import.meta.dirname || process.cwd(), './src'),
     },
   },
+  assetsInclude: ['**/*.svg'], // 確保 SVG 文件被當作資源處理
+  build: {
+    assetsInlineLimit: 0, // 禁用資源內聯，強制輸出為獨立文件
+  },
   test: {
     globals: true,
     environment: 'jsdom',
