@@ -178,12 +178,6 @@ const AdventurerCabin: React.FC = () => {
     return Math.max(0, latestWeek.totalEarned - alreadyExchanged);
   };
 
-  const getTotalPaidOutCoins = () => {
-    return weeklyHistory
-      .filter(w => w.status === 'paid_out')
-      .reduce((total, w) => total + w.totalEarned, 0);
-  };
-
   const isCurrentWeekSettleable = () => {
     const now = new Date();
     return now.getDay() === 0 && now.getHours() >= 20; // 週日晚上8點後

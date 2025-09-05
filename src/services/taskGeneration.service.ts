@@ -80,7 +80,6 @@ export class TaskGenerationService {
         const fallbackTasks = await this.generateFallbackTasks(today, userProfile.age);
         
         // 只添加需要的數量，並避免重複
-        const needed = 3 - finalTasks.length;
         const usedContents = new Set(finalTasks.map(t => t.content));
         
         for (const task of fallbackTasks) {
@@ -458,7 +457,7 @@ export class TaskGenerationService {
       '正': 5, '義': 13, '法': 8, '律': 9,
       
       // 六年級程度 (16-25筆畫)  
-      '科': 9, '技': 7, '術': 11, '發': 12, '明': 8, '創': 12,
+      '科': 9, '技': 7, '術': 11, '發': 12, '創': 12,
       '實': 14, '驗': 23, '哲': 10, '思': 9, '想': 13, '邏': 17,
       '輯': 14, '推': 11, '理': 11, '分': 4, '析': 8, '判': 7,
       '斷': 18,
@@ -471,7 +470,7 @@ export class TaskGenerationService {
       '聰': 17, '勇': 9, '敢': 11, '溫': 12, '暖': 13, '楚': 13,
       '美': 9, '麗': 19, '智': 12, '慧': 15, '堅': 11, '強': 12,
       '優': 17, '秀': 7, '認': 14, '真': 10, '負': 9, '責': 11,
-      '造': 10, '展': 10, '進': 11, '步': 7, '成': 6, '功': 5,
+      '造': 10, '展': 10, '進': 11, '步': 7, '成': 6,
       '夢': 13, '文': 4, '化': 4, '藝': 13, '歷': 16, '史': 5,
       '維': 14, '探': 11, '索': 10, '研': 9, '究': 7
     };

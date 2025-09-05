@@ -277,52 +277,6 @@ const TaskExecutionModal: React.FC<TaskExecutionModalProps> = ({
     }
   };
 
-  const handleAnimateAllCharacters = () => {
-    console.log('handleAnimateAllCharacters called:', {
-      writersLength: writers.length,
-      isAnimating,
-      validWriters: writers.filter(w => w !== null).length
-    });
-    
-    if (writers.length > 0 && !isAnimating) {
-      setIsAnimating(true);
-      let completed = 0;
-      const validWriters = writers.filter(w => w !== null);
-      
-      writers.forEach((writer, index) => {
-        if (writer) {
-          console.log(`Scheduling animation for writer ${index} in ${index * 1000}ms`);
-          setTimeout(() => {
-            console.log(`Starting animation for writer ${index}`);
-            try {
-              writer.animateCharacter({
-                onComplete: () => {
-                  completed++;
-                  console.log(`Animation completed for writer ${index}, total completed: ${completed}/${validWriters.length}`);
-                  if (completed === validWriters.length) {
-                    setIsAnimating(false);
-                    console.log('All character animations completed');
-                  }
-                }
-              });
-            } catch (error) {
-              console.error(`Error animating writer ${index}:`, error);
-              completed++;
-              if (completed === validWriters.length) {
-                setIsAnimating(false);
-              }
-            }
-          }, index * 1000); // 依序動畫，每個字間隔1秒
-        }
-      });
-    } else {
-      console.log('Cannot animate all characters:', {
-        writersLength: writers.length,
-        isAnimating
-      });
-    }
-  };
-
   const handleStepNext = () => {
     if (writers.length > 0 && (task.type === 'character' || task.type === 'word')) {
       const currentWriter = writers[currentCharIndex];
