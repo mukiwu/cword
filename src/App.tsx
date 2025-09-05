@@ -30,8 +30,11 @@ function App() {
     );
   }
 
+  // 根據環境設定 basename
+  const basename = import.meta.env.DEV ? '/' : '/cword';
+
   return (
-    <Router>
+    <Router basename={basename}>
       <Routes>
         <Route 
           path="/" 
