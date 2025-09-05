@@ -79,9 +79,15 @@ const AdventurerCabin: React.FC = () => {
   const [showExchangeModal, setShowExchangeModal] = useState(false);
   const [exchangeAmount, setExchangeAmount] = useState(0);
   const [exchangeResult, setExchangeResult] = useState<any>(null);
+  const [isTrialMode, setIsTrialMode] = useState(false);
 
   useEffect(() => {
     document.title = '冒險者小屋 | 生字冒險島';
+    
+    // 檢查是否為試用模式
+    const trialMode = localStorage.getItem('is_trial_mode') === 'true';
+    setIsTrialMode(trialMode);
+    
     loadData();
   }, []);
 
@@ -196,6 +202,7 @@ const AdventurerCabin: React.FC = () => {
         localStorage.removeItem('openai_api_key');
         localStorage.removeItem('claude_api_key');
         localStorage.removeItem('gemini_api_key');
+        localStorage.removeItem('is_trial_mode');
         alert('API Key 已刪除，請重新設定後繼續使用');
         // 可以選擇重新載入頁面或導向設定頁面
         window.location.reload();
@@ -204,6 +211,19 @@ const AdventurerCabin: React.FC = () => {
         alert('刪除 API Key 失敗，請重試');
       }
     }
+  };
+
+  // 取得剩餘試用天數
+  const getRemainingTrialDays = () => {
+    const firstUsedDate = localStorage.getItem('trial_first_used_date');
+    if (!firstUsedDate) return 7;
+    
+    const firstUsed = new Date(firstUsedDate);
+    const today = new Date();
+    const diffTime = today.getTime() - firstUsed.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    return Math.max(0, 7 - diffDays);
   };
 
   const getAvailableCoinsForExchange = () => {
@@ -398,13 +418,42 @@ const AdventurerCabin: React.FC = () => {
                   <p><span className="font-semibold">加入時間：</span>{formatDate(userProfile?.createdAt || new Date())}</p>
                 </div>
                 <div className="mt-4">
-                  <button
-                    onClick={handleDeleteApiKey}
-                    className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-lg text-sm transition-colors hover:cursor-pointer"
-                    title="刪除 API Key"
-                  >
-                    刪除 API Key
-                  </button>
+                  {isTrialMode ? (
+                    /* 試用模式狀態顯示 */
+                    <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 border-2 border-green-400/50 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <i className="ri-rocket-line text-white text-sm"></i>
+                        </div>
+                        <span className="text-green-300 font-medium text-sm">🚀 試用模式進行中</span>
+                      </div>
+                      <div className="text-xs text-green-200 space-y-1">
+                        <div>• 剩餘試用時間：{getRemainingTrialDays()} 天</div>
+                        <div>• 使用 Google Gemini AI 助手</div>
+                        <div>• 試用期結束後需申請個人 API Key</div>
+                      </div>
+                      <div className="mt-2">
+                        <a
+                          href="https://muki.tw/free-google-gemini-api-key/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded font-medium transition-colors"
+                        >
+                          <i className="ri-external-link-line"></i>
+                          申請免費 API Key
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    /* 正式模式 - 顯示刪除按鈕 */
+                    <button
+                      onClick={handleDeleteApiKey}
+                      className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-lg text-sm transition-colors hover:cursor-pointer"
+                      title="刪除 API Key"
+                    >
+                      刪除 API Key
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
