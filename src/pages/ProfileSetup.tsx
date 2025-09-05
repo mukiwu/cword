@@ -147,9 +147,42 @@ const styles = `
   .border-primary {
     border-color: #D4AF37;
   }
+
+  /* 試用模式選項卡樣式 */
+  .mode-tab {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .mode-tab:hover {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: rgba(212, 175, 55, 0.6);
+    transform: translateY(-1px);
+  }
+
+  .mode-tab.active {
+    background: linear-gradient(135deg, #D4AF37, #FFD700);
+    border-color: #D4AF37;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+  }
+
+  .mode-tab.active .tab-icon {
+    transform: scale(1.1);
+  }
+
+  .trial-info-box {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(34, 197, 94, 0.2));
+    border: 2px solid rgba(34, 197, 94, 0.3);
+    border-radius: 12px;
+  }
 `;
 
 const ProfileSetup: React.FC = () => {
+  const [isTrialMode, setIsTrialMode] = useState(true); // 預設為試用模式
   const [formData, setFormData] = useState({
     name: '',
     age: 8,
@@ -161,9 +194,19 @@ const ProfileSetup: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  // 試用模式的 API Key
+  const TRIAL_API_KEY = 'AIzaSyAQIfVARCdRE3XBZpAbTdkT6mGo304W32o';
+
   useEffect(() => {
     document.title = '開始冒險 | 生字冒險島';
   }, []);
+
+  // 當切換到試用模式時，自動設定為 Gemini
+  useEffect(() => {
+    if (isTrialMode) {
+      setFormData(prev => ({ ...prev, aiModel: 'gemini' }));
+    }
+  }, [isTrialMode]);
 
   // 頭像選項定義 - 像素風格職業頭像
   const avatars = [
@@ -209,14 +252,16 @@ const ProfileSetup: React.FC = () => {
   const ageOptions = [6, 7, 8, 9, 10, 11, 12];
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.avatarId || !formData.apiKey) return;
+    const apiKey = isTrialMode ? TRIAL_API_KEY : formData.apiKey;
+    
+    if (!formData.name || !formData.avatarId || (!isTrialMode && !formData.apiKey)) return;
     
     setIsLoading(true);
     setError('');
 
     try {
       // Store API key in local storage
-      localStorage.setItem('ai_api_key', formData.apiKey);
+      localStorage.setItem('ai_api_key', apiKey);
       localStorage.setItem('ai_model', formData.aiModel);
 
       // Create user profile (without API key)
@@ -236,7 +281,7 @@ const ProfileSetup: React.FC = () => {
     }
   };
 
-  const isFormValid = formData.name.trim() && formData.avatarId && formData.apiKey.trim();
+  const isFormValid = formData.name.trim() && formData.avatarId && (isTrialMode || formData.apiKey.trim());
 
   return (
     <>
@@ -353,48 +398,129 @@ const ProfileSetup: React.FC = () => {
                 </div>
               </div>
 
-              {/* AI 助手選擇 */}
-              <div className="space-y-3">
+              {/* 模式選擇選項卡 */}
+              <div className="space-y-4">
                 <label className="text-lg font-semibold text-neutral-50 flex items-center gap-2">
                   <div className="w-6 h-6 flex items-center justify-center">
-                    <i className="ri-robot-line text-primary"></i>
+                    <i className="ri-settings-line text-primary"></i>
                   </div>
-                  AI 助手選擇
+                  選擇使用方式
                 </label>
-                <Select 
-                  value={formData.aiModel} 
-                  onValueChange={(value: AIModel) => setFormData(prev => ({ ...prev, aiModel: value }))}
-                >
-                  <SelectTrigger className="text-base px-4 py-2.5 rounded-lg border-2 border-yellow-600 text-white">
-                    <SelectValue placeholder="選擇 AI 助手" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gemini">Google Gemini</SelectItem>
-                    <SelectItem value="openai">OpenAI GPT</SelectItem>
-                    <SelectItem value="claude">Anthropic Claude</SelectItem>
-                  </SelectContent>
-                </Select>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  {/* 試用模式 */}
+                  <div 
+                    className={`mode-tab p-4 rounded-xl text-center ${isTrialMode ? 'active' : ''}`}
+                    onClick={() => setIsTrialMode(true)}
+                  >
+                    <div className="tab-icon text-2xl mb-2">🚀</div>
+                    <h4 className="font-semibold text-sm mb-1">立即試用</h4>
+                    <p className="text-xs opacity-80">推薦新手</p>
+                    <div className="mt-2 px-2 py-1 bg-green-500 bg-opacity-20 rounded text-xs text-green-300">
+                      免費體驗
+                    </div>
+                  </div>
+                  
+                  {/* 自己的 API Key */}
+                  <div 
+                    className={`mode-tab p-4 rounded-xl text-center ${!isTrialMode ? 'active' : ''}`}
+                    onClick={() => setIsTrialMode(false)}
+                  >
+                    <div className="tab-icon text-2xl mb-2">🔑</div>
+                    <h4 className="font-semibold text-sm mb-1">使用自己的 API</h4>
+                    <p className="text-xs opacity-80">無使用限制</p>
+                    <div className="mt-2 px-2 py-1 bg-blue-500 bg-opacity-20 rounded text-xs text-blue-300">
+                      進階用戶
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* API Key 輸入 */}
-              <div className="space-y-3">
-                <label className="text-lg font-semibold text-neutral-50 flex items-center gap-2">
-                  <div className="w-6 h-6 flex items-center justify-center">
-                    <i className="ri-key-line text-primary"></i>
+              {isTrialMode ? (
+                /* 試用模式說明 */
+                <div className="trial-info-box p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <i className="ri-check-line text-white text-lg"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-green-300 mb-2">🎉 試用模式已啟用</h4>
+                      <ul className="text-sm text-green-200 space-y-1">
+                        <li>• 使用 Google Gemini AI 助手</li>
+                        <li>• 無需申請 API Key，立即開始學習</li>
+                        <li>• 適合初次體驗的用戶</li>
+                        <li>• 所有核心功能完全開放</li>
+                      </ul>
+                    </div>
                   </div>
-                  API 金鑰 (用於生成任務)
-                </label>
-                <Input
-                  type="password"
-                  value={formData.apiKey}
-                  onChange={(e) => setFormData(prev => ({ ...prev, apiKey: e.target.value }))}
-                  placeholder="請輸入你的 AI API 金鑰"
-                  className="input-field w-full px-4 py-2.5 text-base rounded-lg focus:outline-none"
-                />
-                <p className="text-xs text-neutral-50">
-                  金鑰將安全地儲存在你的瀏覽器中，不會上傳到伺服器
-                </p>
-              </div>
+                </div>
+              ) : (
+                /* 自己 API Key 模式 */
+                <>
+                  {/* AI 助手選擇 */}
+                  <div className="space-y-3">
+                    <label className="text-lg font-semibold text-neutral-50 flex items-center gap-2">
+                      <div className="w-6 h-6 flex items-center justify-center">
+                        <i className="ri-robot-line text-primary"></i>
+                      </div>
+                      AI 助手選擇
+                    </label>
+                    <Select 
+                      value={formData.aiModel} 
+                      onValueChange={(value: AIModel) => setFormData(prev => ({ ...prev, aiModel: value }))}
+                    >
+                      <SelectTrigger className="text-base px-4 py-2.5 rounded-lg border-2 border-yellow-600 text-white">
+                        <SelectValue placeholder="選擇 AI 助手" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="gemini">Google Gemini</SelectItem>
+                        <SelectItem value="openai">OpenAI GPT</SelectItem>
+                        <SelectItem value="claude">Anthropic Claude</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* API Key 輸入 */}
+                  <div className="space-y-3">
+                    <label className="text-lg font-semibold text-neutral-50 flex items-center gap-2">
+                      <div className="w-6 h-6 flex items-center justify-center">
+                        <i className="ri-key-line text-primary"></i>
+                      </div>
+                      API 金鑰 (用於生成任務)
+                    </label>
+                    <Input
+                      type="password"
+                      value={formData.apiKey}
+                      onChange={(e) => setFormData(prev => ({ ...prev, apiKey: e.target.value }))}
+                      placeholder="請輸入你的 AI API 金鑰"
+                      className="input-field w-full px-4 py-2.5 text-base rounded-lg focus:outline-none"
+                    />
+                    <div className="space-y-2">
+                      <p className="text-xs text-neutral-50">
+                        金鑰將安全地儲存在你的瀏覽器中，不會上傳到伺服器
+                      </p>
+                      <div className="bg-blue-50 bg-opacity-10 rounded-lg p-3 border border-blue-300 border-opacity-30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <i className="ri-book-open-line text-blue-300"></i>
+                          <span className="text-sm font-medium text-blue-300">需要申請免費 API Key？</span>
+                        </div>
+                        <p className="text-xs text-blue-200 mb-2">
+                          我們為你準備了詳細的申請教學，完全免費且簡單易懂！
+                        </p>
+                        <a
+                          href="https://muki.tw/free-google-gemini-api-key/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm text-blue-300 hover:text-blue-200 underline transition-colors"
+                        >
+                          <i className="ri-external-link-line"></i>
+                          查看免費申請教學
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {/* 錯誤訊息 */}
               {error && (
