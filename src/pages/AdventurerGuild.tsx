@@ -503,8 +503,36 @@ const AdventurerGuild: React.FC = () => {
           </div>
 
           {/* Coins Dashboard */}
-          <div className="scroll-bg rounded-2xl p-6 mb-8 mx-auto max-w-4xl opacity-80">
-            <div className="flex justify-between items-center">
+          <div className="scroll-bg rounded-2xl p-4 md:p-6 mb-8 mx-auto max-w-4xl opacity-80">
+            {/* Mobile Layout */}
+            <div className="block md:hidden">
+              <div className="space-y-4">
+                {/* Today's Coins */}
+                <div className="flex items-center gap-3 bg-yellow-50 rounded-xl p-4">
+                  <div className="w-10 h-10 coin-glow bg-yellow-400 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i className="ri-coin-fill text-yellow-800 text-lg"></i>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-yellow-800 font-bold text-base">今日獲得</p>
+                    <p className="text-xl font-bold text-yellow-600">{todayCoins} 學習幣</p>
+                  </div>
+                </div>
+
+                {/* Weekly Coins */}
+                <div className="flex items-center gap-3 bg-yellow-50 rounded-xl p-4">
+                  <div className="w-10 h-10 bg-yellow-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i className="ri-treasure-map-fill text-white text-lg"></i>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-yellow-800 font-bold text-base">本週累計</p>
+                    <p className="text-xl font-bold text-yellow-600">{weeklyCoins} 學習幣</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tablet and Desktop Layout */}
+            <div className="hidden md:flex justify-between items-center">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 coin-glow bg-yellow-400 rounded-full flex items-center justify-center">
                   <i className="ri-coin-fill text-yellow-800 text-xl"></i>
@@ -578,25 +606,25 @@ const AdventurerGuild: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {tasks.map(task => (
-                  <div key={task.id} className="task-card rounded-2xl p-6">
+                  <div key={task.id} className="task-card rounded-2xl p-4 md:p-6">
                     <div className="text-center mb-4">
                       <div className="flex items-center justify-center mb-3">
-                        <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${getTaskGradient(task.type)} flex items-center justify-center`}>
-                          <i className={`${getTaskIcon(task.type)} text-white text-2xl`}></i>
+                        <div className={`w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br ${getTaskGradient(task.type)} flex items-center justify-center`}>
+                          <i className={`${getTaskIcon(task.type)} text-white text-xl md:text-2xl`}></i>
                         </div>
                       </div>
-                      <h4 className="text-xl font-bold text-yellow-800 mb-2">
+                      <h4 className="text-lg md:text-xl font-bold text-yellow-800 mb-2">
                         {getTaskTypeText(task.type)}
                       </h4>
                       <div className="bg-yellow-600 rounded-lg p-3 mb-4">
-                        <p className="text-sm text-white font-medium mb-1">學習內容</p>
-                        <p className="text-3xl text-white">
+                        <p className="text-xs md:text-sm text-white font-medium mb-1">學習內容</p>
+                        <p className="text-2xl md:text-3xl text-white">
                           {task.content}
                         </p>
                         {task.details.sentence && (
-                          <p className="text-sm text-black mt-1">
+                          <p className="text-xs md:text-sm text-black mt-1">
                             請用「{task.content}」造一個完整的句子
                           </p>
                         )}
@@ -605,17 +633,17 @@ const AdventurerGuild: React.FC = () => {
                     
                     <div className="flex justify-between items-center mb-4">
                       <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 flex items-center justify-center">
-                          <i className="ri-coin-fill text-yellow-500 text-lg"></i>
+                        <div className="w-5 h-5 md:w-6 md:h-6 flex items-center justify-center">
+                          <i className="ri-coin-fill text-yellow-500 text-base md:text-lg"></i>
                         </div>
-                        <span className="text-yellow-800 font-medium">+{task.reward} 學習幣</span>
+                        <span className="text-yellow-800 font-medium text-sm md:text-base">+{task.reward} 學習幣</span>
                       </div>
                       {task.details.repetitions && (
                         <div className="flex items-center gap-1">
                           <div className="w-4 h-4 flex items-center justify-center">
-                            <i className="ri-time-line text-yellow-800"></i>
+                            <i className="ri-time-line text-yellow-800 text-xs md:text-sm"></i>
                           </div>
-                          <span className="text-sm text-yellow-800">
+                          <span className="text-xs md:text-sm text-yellow-800">
                             {task.details.repetitions} 次
                           </span>
                         </div>
@@ -623,23 +651,23 @@ const AdventurerGuild: React.FC = () => {
                     </div>
                     
                     {task.status === 'completed' ? (
-                      <button className="w-full bg-green-600 text-white font-bold py-3 rounded-lg cursor-default">
+                      <button className="w-full bg-green-600 text-white font-bold py-2.5 md:py-3 rounded-lg cursor-default text-sm md:text-base">
                         ✅ 已完成
                       </button>
                     ) : task.status === 'in_progress' ? (
                       <button
                         onClick={() => handleTaskInteraction(task.id)}
-                        className="w-full bg-orange-600 text-white font-bold py-3 rounded-lg hover:bg-orange-700 transition-colors animate-pulse"
+                        className="w-full bg-orange-600 text-white font-bold py-2.5 md:py-3 rounded-lg hover:bg-orange-700 transition-colors animate-pulse text-sm md:text-base"
                       >
                         <div className="flex items-center justify-center gap-2">
-                          <i className="ri-play-circle-line text-xl"></i>
+                          <i className="ri-play-circle-line text-lg md:text-xl"></i>
                           <span>進行中...</span>
                         </div>
                       </button>
                     ) : (
                       <button
                         onClick={() => handleTaskInteraction(task.id)}
-                        className="w-full bg-yellow-600 text-white font-bold py-3 rounded-lg hover:cursor-pointer hover:bg-yellow-700 transition-colors"
+                        className="w-full bg-yellow-600 text-white font-bold py-2.5 md:py-3 rounded-lg hover:cursor-pointer hover:bg-yellow-700 transition-colors text-sm md:text-base"
                       >
                         接受任務
                       </button>
