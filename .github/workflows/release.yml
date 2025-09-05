@@ -29,7 +29,7 @@ jobs:
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest tag: $LATEST_TAG"
 
-      - name: Generate new version
+      - name: Analyze commits and generate version
         id: generate-version
         run: |
           LATEST_TAG="${{ steps.get-latest-tag.outputs.latest_tag }}"
@@ -40,11 +40,63 @@ jobs:
           MAJOR=${VERSION_PARTS[0]:-0}
           MINOR=${VERSION_PARTS[1]:-0}
           PATCH=${VERSION_PARTS[2]:-0}
-          # 自動遞增 patch 版本
-          NEW_PATCH=$((PATCH + 1))
-          NEW_VERSION="v$MAJOR.$MINOR.$NEW_PATCH"
+          
+          # 獲取 commit messages 進行分析
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            COMMITS=$(git log --oneline --pretty=format:"%s" | head -20)
+          else
+            COMMITS=$(git log ${LATEST_TAG}..HEAD --oneline --pretty=format:"%s")
+          fi
+          
+          # 語義化版本判斷邏輯
+          BREAKING_CHANGE=false
+          NEW_FEATURE=false
+          BUG_FIX=false
+          
+          while IFS= read -r commit; do
+            # 檢查破壞性變更 (MAJOR bump)
+            if [[ "$commit" == *"BREAKING CHANGE"* ]] || [[ "$commit" =~ ^[^:]+!: ]] || [[ "$commit" == *"💥"* ]]; then
+              BREAKING_CHANGE=true
+            # 檢查新功能 (MINOR bump)  
+            elif [[ "$commit" =~ ^(feat|✨|🚀).* ]] || [[ "$commit" == *"feat:"* ]] || [[ "$commit" == *"feature:"* ]]; then
+              NEW_FEATURE=true
+            # 檢查 bug 修復 (PATCH bump)
+            elif [[ "$commit" =~ ^(fix|🐛|🔧|⚡).* ]] || [[ "$commit" == *"fix:"* ]] || [[ "$commit" == *"bugfix:"* ]]; then
+              BUG_FIX=true
+            fi
+          done <<< "$COMMITS"
+          
+          # 根據語義化版本規則計算新版本
+          if [ "$BREAKING_CHANGE" = true ]; then
+            # 破壞性變更：遞增 MAJOR，重置 MINOR 和 PATCH
+            NEW_MAJOR=$((MAJOR + 1))
+            NEW_MINOR=0
+            NEW_PATCH=0
+            VERSION_TYPE="MAJOR (Breaking Changes)"
+          elif [ "$NEW_FEATURE" = true ]; then
+            # 新功能：遞增 MINOR，重置 PATCH
+            NEW_MAJOR=$MAJOR
+            NEW_MINOR=$((MINOR + 1))
+            NEW_PATCH=0
+            VERSION_TYPE="MINOR (New Features)"
+          elif [ "$BUG_FIX" = true ]; then
+            # Bug 修復：遞增 PATCH
+            NEW_MAJOR=$MAJOR
+            NEW_MINOR=$MINOR
+            NEW_PATCH=$((PATCH + 1))
+            VERSION_TYPE="PATCH (Bug Fixes)"
+          else
+            # 其他變更：遞增 PATCH
+            NEW_MAJOR=$MAJOR
+            NEW_MINOR=$MINOR
+            NEW_PATCH=$((PATCH + 1))
+            VERSION_TYPE="PATCH (Other Changes)"
+          fi
+          
+          NEW_VERSION="v$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH"
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "New version: $NEW_VERSION"
+          echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION ($VERSION_TYPE)"
 
       - name: Get commits since last tag
         id: get-commits
@@ -83,12 +135,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           NEW_VERSION="${{ steps.generate-version.outputs.new_version }}"
+          VERSION_TYPE="${{ steps.generate-version.outputs.version_type }}"
           COMMIT_LIST="${{ steps.get-commits.outputs.commit_list }}"
           
-          # 創建 release
+          # 創建帶版本類型說明的 release
           gh release create "$NEW_VERSION" \
             --title "Release $NEW_VERSION" \
-            --notes "$COMMIT_LIST" \
+            --notes "**$VERSION_TYPE** - $COMMIT_LIST" \
             --latest
 
       - name: Update deployment info
