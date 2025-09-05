@@ -110,14 +110,16 @@ jobs:
             COMMITS=$(git log ${LATEST_TAG}..HEAD --oneline --pretty=format:"%s")
           fi
           
-          # 將 commits 格式化為列表
+          # 將 commits 格式化為列表，並處理特殊字符
           COMMIT_LIST=""
           while IFS= read -r line; do
             if [ -n "$line" ]; then
+              # 清理可能導致問題的特殊字符
+              clean_line=$(echo "$line" | sed 's/["`$\\]/\\&/g')
               if [ -n "$COMMIT_LIST" ]; then
-                COMMIT_LIST="${COMMIT_LIST}\n- ${line}"
+                COMMIT_LIST="${COMMIT_LIST}\n- ${clean_line}"
               else
-                COMMIT_LIST="- ${line}"
+                COMMIT_LIST="- ${clean_line}"
               fi
             fi
           done <<< "$COMMITS"
@@ -147,7 +149,7 @@ jobs:
           echo "## ${VERSION_TYPE}" > release_notes.md
           echo "" >> release_notes.md
           echo "## Changes" >> release_notes.md
-          echo "${COMMIT_LIST}" >> release_notes.md
+          echo -e "${COMMIT_LIST}" >> release_notes.md
           echo "" >> release_notes.md
           echo "---" >> release_notes.md
           echo "🚀 **Deployed to**: https://${{ github.repository_owner }}.github.io/cword" >> release_notes.md
