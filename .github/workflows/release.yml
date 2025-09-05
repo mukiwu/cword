@@ -13,7 +13,7 @@ permissions:
 jobs:
   create-release:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
     
     steps:
       - name: Checkout
@@ -110,25 +110,29 @@ jobs:
             COMMITS=$(git log ${LATEST_TAG}..HEAD --oneline --pretty=format:"%s")
           fi
           
-          # 將 commits 格式化為多行列表
+          # 將 commits 格式化為列表
           COMMIT_LIST=""
           while IFS= read -r line; do
             if [ -n "$line" ]; then
               if [ -n "$COMMIT_LIST" ]; then
-                COMMIT_LIST="$COMMIT_LIST
-- $line"
+                COMMIT_LIST="${COMMIT_LIST}\n- ${line}"
               else
-                COMMIT_LIST="- $line"
+                COMMIT_LIST="- ${line}"
               fi
             fi
           done <<< "$COMMITS"
           
           # 如果沒有新的 commits，使用默認信息
           if [ -z "$COMMIT_LIST" ]; then
-            COMMIT_LIST="Minor updates and improvements"
+            COMMIT_LIST="- Minor updates and improvements"
           fi
           
-          echo "commit_list=$COMMIT_LIST" >> $GITHUB_OUTPUT
+          # 使用 EOF 來處理多行輸出
+          {
+            echo "commit_list<<EOF"
+            echo -e "$COMMIT_LIST"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
           echo "Commits: $COMMIT_LIST"
 
       - name: Create Release
@@ -139,19 +143,19 @@ jobs:
           VERSION_TYPE="${{ steps.generate-version.outputs.version_type }}"
           COMMIT_LIST="${{ steps.get-commits.outputs.commit_list }}"
           
-          # 創建格式化的 release notes
-          RELEASE_NOTES="## $VERSION_TYPE
-
-## Changes
-$COMMIT_LIST
-
----
-🚀 **Deployed to**: https://${{ github.repository_owner }}.github.io/cword"
+          # 創建 release notes 文件
+          echo "## ${VERSION_TYPE}" > release_notes.md
+          echo "" >> release_notes.md
+          echo "## Changes" >> release_notes.md
+          echo "${COMMIT_LIST}" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "---" >> release_notes.md
+          echo "🚀 **Deployed to**: https://${{ github.repository_owner }}.github.io/cword" >> release_notes.md
           
           # 創建 release
           gh release create "$NEW_VERSION" \
             --title "Release $NEW_VERSION" \
-            --notes "$RELEASE_NOTES" \
+            --notes-file release_notes.md \
             --latest
 
       - name: Update deployment info
