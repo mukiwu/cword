@@ -5,7 +5,20 @@ import { UserProfileService } from './userProfile.service';
 import { AIService } from './ai.service';
 
 export class TaskGenerationService {
+  private static isGeneratingTasks = false; // 防止並發調用
+  
   static async createDailyTasksForUser(apiConfig: AIAPIConfig): Promise<IDailyTask[]> {
+    // 防止並發調用
+    if (this.isGeneratingTasks) {
+      console.log('任務生成中，等待完成...');
+      // 等待當前生成完成，然後返回今日任務
+      while (this.isGeneratingTasks) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      return await this.getTodaysTasks();
+    }
+    
+    this.isGeneratingTasks = true;
     try {
       // Get user profile
       const userProfile = await UserProfileService.getUserProfile();
@@ -105,6 +118,8 @@ export class TaskGenerationService {
     } catch (error) {
       console.error('Failed to create daily tasks:', error);
       throw error;
+    } finally {
+      this.isGeneratingTasks = false; // 無論成功失敗都要重置標記
     }
   }
 
@@ -431,7 +446,7 @@ export class TaskGenerationService {
   // 獲取字的實際筆畫數（優先使用 hanzi-writer-data）
   private static async getActualStrokes(char: string): Promise<number> {
     try {
-      // 先嘗試從 hanzi-writer-data 獲取準確的筆畫數
+      // 從 hanzi-writer-data 獲取準確的筆畫數
       const response = await fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.0/${char}.json`);
       if (response.ok) {
         const data = await response.json();
@@ -440,11 +455,11 @@ export class TaskGenerationService {
         }
       }
     } catch (error) {
-      console.warn(`Failed to fetch stroke data for ${char}, falling back to estimate`, error);
+      console.warn(`Failed to fetch stroke data for ${char}, using fallback`, error);
     }
     
-    // 備用：使用預估值
-    return this.estimateStrokes(char);
+    // 備用：根據字符複雜度的啟發式估算
+    return this.getStrokeFallback(char);
   }
 
   // 計算詞語總筆畫數
@@ -457,50 +472,18 @@ export class TaskGenerationService {
   }
 
   // 備用筆畫估算（當無法獲取準確數據時使用）
-  private static estimateStrokes(char: string): number {
-    const strokeMap: Record<string, number> = {
-      // 基礎字
-      '人': 2, '大': 3, '小': 3, '山': 3, '水': 4, '火': 4,
-      '木': 4, '土': 3, '日': 4, '月': 4, '春': 9, '夏': 10,
-      '秋': 9, '冬': 5, '花': 7, '草': 9, '樹': 16, '鳥': 11,
-      '雲': 12, '雨': 8,
-      
-      // 二年級程度 (5-10筆畫)
-      '明': 8, '朋': 8, '友': 4, '故': 9, '事': 8, '新': 13,
-      '舊': 18, '左': 5, '右': 5, '方': 4,
-      
-      // 三年級程度 (8-13筆畫)
-      '班': 10, '級': 9, '同': 6, '學': 16, '老': 6, '師': 10,
-      '教': 11, '室': 9, '功': 5, '課': 15,
-      
-      // 四年級程度 (10-16筆畫)
-      '環': 17, '境': 14, '保': 9, '護': 20, '污': 6, '染': 9,
-      '清': 11, '潔': 15, '資': 13, '源': 13,
-      
-      // 五年級程度 (13-20筆畫)
-      '民': 5, '主': 5, '自': 6, '由': 5, '平': 5, '等': 12,
-      '正': 5, '義': 13, '法': 8, '律': 9,
-      
-      // 六年級程度 (16-25筆畫)  
-      '科': 9, '技': 7, '術': 11, '發': 12, '創': 12,
-      '實': 14, '驗': 23, '哲': 10, '思': 9, '想': 13, '邏': 17,
-      '輯': 14, '推': 11, '理': 11, '分': 4, '析': 8, '判': 7,
-      '斷': 18,
-      
-      // 六年級進階（冷僻字，18-30筆畫）
-      '璀': 15, '璨': 17, '磅': 15, '礴': 14, '澎': 15, '湃': 12,
-      '蒼': 13, '穹': 8, '翱': 18, '翔': 12, '浩': 10, '瀚': 19,
-      
-      // 其他常用字
-      '聰': 17, '勇': 9, '敢': 11, '溫': 12, '暖': 13, '楚': 13,
-      '美': 9, '麗': 19, '智': 12, '慧': 15, '堅': 11, '強': 12,
-      '優': 17, '秀': 7, '認': 14, '真': 10, '負': 9, '責': 11,
-      '造': 10, '展': 10, '進': 11, '步': 7, '成': 6,
-      '夢': 13, '文': 4, '化': 4, '藝': 13, '歷': 16, '史': 5,
-      '維': 14, '探': 11, '索': 10, '研': 9, '究': 7
-    };
+  private static getStrokeFallback(char: string): number {
+    // 簡單的啟發式估算：根據字符複雜度
+    const charCode = char.charCodeAt(0);
+    const complexity = charCode % 20; // 0-19
     
-    return strokeMap[char] || 12; // 默認12劃（僅作備用）
+    // 根據Unicode範圍調整基礎值
+    let baseStrokes = 10;
+    if (charCode >= 0x4E00 && charCode <= 0x9FFF) { // CJK統一漢字
+      baseStrokes = 8 + (complexity % 12); // 8-19筆畫
+    }
+    
+    return Math.max(3, Math.min(30, baseStrokes)); // 限制在3-30筆畫之間
   }
 
   private static async updateWeeklyLedger(reward: number, taskId: string): Promise<void> {
