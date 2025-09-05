@@ -414,9 +414,9 @@ const ProfileSetup: React.FC = () => {
                     onClick={() => setIsTrialMode(true)}
                   >
                     <div className="tab-icon text-2xl mb-2">🚀</div>
-                    <h4 className="font-semibold text-sm mb-1">立即試用</h4>
-                    <p className="text-xs opacity-80">推薦新手</p>
-                    <div className="mt-2 px-2 py-1 bg-green-500 bg-opacity-20 rounded text-xs text-green-300">
+                    <h4 className="text-sm text-white mb-1">立即試用</h4>
+                    <p className="text-white">推薦新手</p>
+                    <div className="mt-2 px-2 py-1 bg-orange-500 bg-opacity-20 rounded text-sm text-black">
                       免費體驗
                     </div>
                   </div>
@@ -427,10 +427,10 @@ const ProfileSetup: React.FC = () => {
                     onClick={() => setIsTrialMode(false)}
                   >
                     <div className="tab-icon text-2xl mb-2">🔑</div>
-                    <h4 className="font-semibold text-sm mb-1">使用自己的 API</h4>
-                    <p className="text-xs opacity-80">無使用限制</p>
-                    <div className="mt-2 px-2 py-1 bg-blue-500 bg-opacity-20 rounded text-xs text-blue-300">
-                      進階用戶
+                    <h4 className="text-sm text-white mb-1">使用自己的 API</h4>
+                    <p className="text-white">無使用限制</p>
+                    <div className="mt-2 px-2 py-1 bg-blue-500 bg-opacity-20 rounded text-sm text-blue-300">
+                      免費申請
                     </div>
                   </div>
                 </div>
@@ -448,8 +448,9 @@ const ProfileSetup: React.FC = () => {
                       <ul className="text-sm text-green-200 space-y-1">
                         <li>• 使用 Google Gemini AI 助手</li>
                         <li>• 無需申請 API Key，立即開始學習</li>
-                        <li>• 適合初次體驗的用戶</li>
-                        <li>• 所有核心功能完全開放</li>
+                        <li>• 適合初次體驗的使用者</li>
+                        <li>⚠️ <span className="text-yellow-300">這是試用帳號，使用人數過多時可能會超過額度限制而無法使用</span></li>
+                        <li>💡 <span className="text-blue-300">建議申請個人 API Key 以獲得最佳體驗</span></li>
                       </ul>
                     </div>
                   </div>
@@ -501,17 +502,17 @@ const ProfileSetup: React.FC = () => {
                       </p>
                       <div className="bg-blue-50 bg-opacity-10 rounded-lg p-3 border border-blue-300 border-opacity-30">
                         <div className="flex items-center gap-2 mb-2">
-                          <i className="ri-book-open-line text-blue-300"></i>
-                          <span className="text-sm font-medium text-blue-300">需要申請免費 API Key？</span>
+                          <i className="ri-book-open-line text-blue-600"></i>
+                          <span className="text-sm font-medium text-blue-600">需要申請免費 API Key？</span>
                         </div>
-                        <p className="text-xs text-blue-200 mb-2">
+                        <p className="text-blue-600 mb-2">
                           我們為你準備了詳細的申請教學，完全免費且簡單易懂！
                         </p>
                         <a
                           href="https://muki.tw/free-google-gemini-api-key/"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm text-blue-300 hover:text-blue-200 underline transition-colors"
+                          className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-amber-600 underline transition-colors"
                         >
                           <i className="ri-external-link-line"></i>
                           查看免費申請教學
