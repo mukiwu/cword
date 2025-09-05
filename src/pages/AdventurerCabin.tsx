@@ -185,7 +185,7 @@ const AdventurerCabin: React.FC = () => {
     if (confirm('確定要刪除帳號嗎？這將會清除所有的學習紀錄和設定，而且無法還原。')) {
       try {
         await DatabaseService.clearAllData();
-        window.location.href = '/';
+        window.location.href = import.meta.env.BASE_URL;
       } catch (err) {
         console.error('Logout failed:', err);
         alert('刪除帳號失敗，請重試');
@@ -250,7 +250,7 @@ const AdventurerCabin: React.FC = () => {
         localStorage.removeItem('ai_model');
         alert('試用模式已結束！請重新進入設定頁面配置你的 API Key。');
         // 導向首頁重新設定
-        window.location.href = '/';
+        window.location.href = import.meta.env.BASE_URL;
       } catch (err) {
         console.error('End trial failed:', err);
         alert('結束試用失敗，請重試');
