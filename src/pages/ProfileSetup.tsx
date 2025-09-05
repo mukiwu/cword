@@ -5,6 +5,14 @@ import type { AIModel } from '../types';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+// 導入職業頭像圖片
+import warriorSvg from '@/assets/avatars/warrior.svg';
+import mageSvg from '@/assets/avatars/mage.svg';
+import archerSvg from '@/assets/avatars/archer.svg';
+import healerSvg from '@/assets/avatars/healer.svg';
+import explorerSvg from '@/assets/avatars/explorer.svg';
+import scholarSvg from '@/assets/avatars/scholar.svg';
+
 // 添加自定義 CSS 樣式 - 使用 Tailwind 3.4.16 的配置和語法
 const styles = `
   :root {
@@ -159,37 +167,37 @@ const ProfileSetup: React.FC = () => {
       id: 'warrior', 
       name: '勇敢戰士', 
       description: '勇敢無畏',
-      svgPath: `${import.meta.env.BASE_URL}src/assets/avatars/warrior.svg`
+      svgPath: warriorSvg
     },
     { 
       id: 'mage', 
       name: '聰明魔法師', 
       description: '智慧過人',
-      svgPath: `${import.meta.env.BASE_URL}src/assets/avatars/mage.svg`
+      svgPath: mageSvg
     },
     { 
       id: 'archer', 
       name: '神射手', 
       description: '百發百中',
-      svgPath: `${import.meta.env.BASE_URL}src/assets/avatars/archer.svg`
+      svgPath: archerSvg
     },
     { 
       id: 'healer', 
       name: '治療師', 
       description: '溫柔善良',
-      svgPath: `${import.meta.env.BASE_URL}src/assets/avatars/healer.svg`
+      svgPath: healerSvg
     },
     { 
       id: 'explorer', 
       name: '探險家', 
       description: '好奇心強',
-      svgPath: `${import.meta.env.BASE_URL}src/assets/avatars/explorer.svg`
+      svgPath: explorerSvg
     },
     { 
       id: 'scholar', 
       name: '學者', 
       description: '博學多聞',
-      svgPath: `${import.meta.env.BASE_URL}src/assets/avatars/scholar.svg`
+      svgPath: scholarSvg
     },
   ];
 

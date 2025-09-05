@@ -6,6 +6,27 @@ import { WeeklyLedgerService } from '../services/weeklyLedger.service';
 import { TaskGenerationService } from '../services/taskGeneration.service';
 import { DatabaseService } from '../services/database';
 
+// 導入職業頭像圖片
+import warriorSvg from '@/assets/avatars/warrior.svg';
+import mageSvg from '@/assets/avatars/mage.svg';
+import archerSvg from '@/assets/avatars/archer.svg';
+import healerSvg from '@/assets/avatars/healer.svg';
+import explorerSvg from '@/assets/avatars/explorer.svg';
+import scholarSvg from '@/assets/avatars/scholar.svg';
+
+// 頭像映射函數
+const getAvatarSrc = (avatarId: string): string => {
+  const avatarMap: Record<string, string> = {
+    warrior: warriorSvg,
+    mage: mageSvg,
+    archer: archerSvg,
+    healer: healerSvg,
+    explorer: explorerSvg,
+    scholar: scholarSvg,
+  };
+  return avatarMap[avatarId] || warriorSvg; // 默認使用戰士圖片
+};
+
 // 添加自定義 CSS 樣式 - 與 Guild 頁面一致的中世紀風格
 const styles = `
   .parchment-bg {
@@ -188,7 +209,7 @@ const AdventurerCabin: React.FC = () => {
       return (
         <div className="w-16 h-16 bg-gray-100 rounded-lg p-2 flex items-center justify-center border-2 border-yellow-600">
           <img 
-            src={`${import.meta.env.BASE_URL}src/assets/avatars/${avatarId}.svg`} 
+            src={getAvatarSrc(avatarId)} 
             alt={`Avatar ${avatarId}`}
             className="w-full h-full object-contain"
             style={{ imageRendering: 'pixelated' }}

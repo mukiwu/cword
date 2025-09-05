@@ -9,6 +9,27 @@ import { DatabaseService } from '../services/database';
 import ApiConfigModal from '../components/ApiConfigModal';
 import TaskExecutionModal from '../components/TaskExecutionModal';
 
+// 導入職業頭像圖片
+import warriorSvg from '@/assets/avatars/warrior.svg';
+import mageSvg from '@/assets/avatars/mage.svg';
+import archerSvg from '@/assets/avatars/archer.svg';
+import healerSvg from '@/assets/avatars/healer.svg';
+import explorerSvg from '@/assets/avatars/explorer.svg';
+import scholarSvg from '@/assets/avatars/scholar.svg';
+
+// 頭像映射函數
+const getAvatarSrc = (avatarId: string): string => {
+  const avatarMap: Record<string, string> = {
+    warrior: warriorSvg,
+    mage: mageSvg,
+    archer: archerSvg,
+    healer: healerSvg,
+    explorer: explorerSvg,
+    scholar: scholarSvg,
+  };
+  return avatarMap[avatarId] || warriorSvg; // 默認使用戰士圖片
+};
+
 // 添加自定義 CSS 樣式 - 採用 docs/main.html 的設計風格
 const styles = `
   .parchment-bg {
@@ -395,7 +416,7 @@ const AdventurerGuild: React.FC = () => {
             <div className="w-12 h-12 bg-gray-100 rounded-lg p-1 flex items-center justify-center border-2 border-yellow-600">
               {userProfile?.avatarId ? (
                 <img 
-                  src={`${import.meta.env.BASE_URL}src/assets/avatars/${userProfile.avatarId}.svg`} 
+                  src={getAvatarSrc(userProfile.avatarId)} 
                   alt={`Avatar ${userProfile.avatarId}`}
                   className="w-full h-full object-contain"
                   style={{ imageRendering: 'pixelated' }}
