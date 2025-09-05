@@ -226,6 +226,23 @@ const AdventurerCabin: React.FC = () => {
     return Math.max(0, 7 - diffDays);
   };
 
+  // 提早結束試用模式
+  const handleEndTrial = () => {
+    if (confirm('確定要提早結束試用並設定自己的 API Key 嗎？\n\n結束後你需要使用自己的 API Key 才能繼續使用 AI 助手功能。')) {
+      try {
+        // 清除試用模式相關資料
+        localStorage.removeItem('is_trial_mode');
+        localStorage.removeItem('ai_model');
+        alert('試用模式已結束！請重新進入設定頁面配置你的 API Key。');
+        // 導向首頁重新設定
+        window.location.href = '/';
+      } catch (err) {
+        console.error('End trial failed:', err);
+        alert('結束試用失敗，請重試');
+      }
+    }
+  };
+
   const getAvailableCoinsForExchange = () => {
     const paidOutWeeks = weeklyHistory.filter(w => w.status === 'paid_out');
     if (paidOutWeeks.length === 0) return 0;
@@ -425,14 +442,13 @@ const AdventurerCabin: React.FC = () => {
                         <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                           <i className="ri-rocket-line text-white text-sm"></i>
                         </div>
-                        <span className="text-green-300 font-medium text-sm">🚀 試用模式進行中</span>
+                        <span className="text-green-600 font-medium text-sm">🚀 試用模式進行中</span>
                       </div>
-                      <div className="text-xs text-green-200 space-y-1">
+                      <div className="text-xs text-black space-y-1">
                         <div>• 剩餘試用時間：{getRemainingTrialDays()} 天</div>
-                        <div>• 使用 Google Gemini AI 助手</div>
-                        <div>• 試用期結束後需申請個人 API Key</div>
+                        <div>• 試用期結束後，請設定自己的 API Key 繼續使用</div>
                       </div>
-                      <div className="mt-2">
+                      <div className="mt-2 space-y-2">
                         <a
                           href="https://muki.tw/free-google-gemini-api-key/"
                           target="_blank"
@@ -440,8 +456,17 @@ const AdventurerCabin: React.FC = () => {
                           className="inline-flex items-center gap-1 text-xs bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded font-medium transition-colors"
                         >
                           <i className="ri-external-link-line"></i>
-                          申請免費 API Key
+                          教你如何申請免費 API Key
                         </a>
+                        <div>
+                          <button
+                            onClick={handleEndTrial}
+                            className="inline-flex items-center gap-1 text-xs bg-orange-600 hover:bg-orange-700 text-white px-2 py-1 rounded font-medium transition-colors"
+                          >
+                            <i className="ri-settings-line"></i>
+                            提早結束試用，設定自己的 API KEY
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ) : (
