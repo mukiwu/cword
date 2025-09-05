@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import type { IUserProfile, IWeeklyLedger, ICoinExchange } from '../types';
 import { UserProfileService } from '../services/userProfile.service';
 import { WeeklyLedgerService } from '../services/weeklyLedger.service';
 import { TaskGenerationService } from '../services/taskGeneration.service';
 import { DatabaseService } from '../services/database';
+import { PageHeader } from '../components/PageHeader';
+import { FloatingNavButton } from '../components/shared/FloatingNavButton';
 
 // 導入職業頭像圖片
 import warriorSvg from '@/assets/avatars/warrior.svg';
@@ -204,32 +205,17 @@ const AdventurerCabin: React.FC = () => {
     return now.getDay() === 0 && now.getHours() >= 20; // 週日晚上8點後
   };
 
-  const getAvatarDisplay = (avatarId: string) => {
-    if (avatarId) {
-      return (
-        <div className="w-16 h-16 bg-gray-100 rounded-lg p-2 flex items-center justify-center border-2 border-yellow-600">
-          <img 
-            src={getAvatarSrc(avatarId)} 
-            alt={`Avatar ${avatarId}`}
-            className="w-full h-full object-contain"
-            style={{ imageRendering: 'pixelated' }}
-          />
-        </div>
-      );
-    }
-    return (
-      <div className="w-16 h-16 bg-gray-100 rounded-lg p-2 flex items-center justify-center border-2 border-gray-300">
-        <i className="ri-user-fill text-gray-400 text-3xl"></i>
-      </div>
-    );
-  };
 
   const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('zh-TW', {
+    const dateStr = new Date(date).toLocaleDateString('zh-TW', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     });
+    // 在數字和中文字之間，以及中文字和數字之間加入空格
+    return dateStr
+      .replace(/(\d+)(年|月)/g, '$1 $2 ')  // 數字+年/月後面加空格
+      .replace(/(\d+)(日)/g, '$1 $2');     // 數字+日之間加空格
   };
 
   // 週進度圖表組件
@@ -344,45 +330,19 @@ const AdventurerCabin: React.FC = () => {
   return (
     <>
       <style>{styles}</style>
-      <div className="min-h-screen p-4"
+      <div className="min-h-screen"
            style={{
              backgroundImage: `url('${import.meta.env.BASE_URL}bg.jpg')`,
              backgroundSize: 'cover',
              backgroundPosition: 'center',
              backgroundAttachment: 'fixed'
            }}>
-        {/* Header */}
-        <header className="flex justify-between items-center p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 guild-badge rounded-full flex items-center justify-center">
-              <span className="font-['Pacifico'] text-yellow-800 text-xl font-bold">🏠</span>
-            </div>
-            <h1 className="text-4xl font-bold text-white drop-shadow-lg">
-              冒險者小屋
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex items-center bg-black bg-opacity-50 rounded-xl px-4 py-2">
-              <div className="w-8 h-8 flex items-center justify-center">
-                <i className="ri-cake-2-line text-white text-xl"></i>
-              </div>
-              <span className="text-white font-medium">
-                <span className="mr-1 text-4xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                  {userProfile?.age || '?'}
-                </span>
-              </span>
-            </div>
-            {getAvatarDisplay(userProfile?.avatarId || '')}
-            <button
-              onClick={handleLogout}
-              className="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center border-2 border-red-700 transition-colors"
-              title="登出"
-            >
-              <i className="ri-logout-box-line text-white text-xl"></i>
-            </button>
-          </div>
-        </header>
+        <PageHeader
+          title="冒險者小屋"
+          icon="🏠"
+          userProfile={userProfile}
+          onLogout={handleLogout}
+        />
 
         <div className="px-6 pb-6">
           {/* Welcome Message */}
@@ -398,12 +358,23 @@ const AdventurerCabin: React.FC = () => {
           {/* Profile Card */}
           <div className="scroll-bg rounded-2xl p-6 mb-8 mx-auto max-w-4xl opacity-90">
             <div className="flex items-center gap-6">
-              {getAvatarDisplay(userProfile?.avatarId || '')}
+              <div className="w-16 h-16 bg-gray-100 rounded-lg p-2 flex items-center justify-center border-2 border-yellow-600">
+                {userProfile?.avatarId ? (
+                  <img 
+                    src={getAvatarSrc(userProfile.avatarId)} 
+                    alt={`Avatar ${userProfile.avatarId}`}
+                    className="w-full h-full object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                ) : (
+                  <i className="ri-user-fill text-gray-400 text-3xl"></i>
+                )}
+              </div>
               <div>
                 <h2 className="text-2xl font-bold text-yellow-800 mb-2">{userProfile?.name}</h2>
                 <div className="grid grid-cols-2 gap-4 text-yellow-700">
                   <p><span className="font-semibold">年齡：</span>{userProfile?.age} 歲</p>
-                  <p><span className="font-semibold">年級：</span>國小{UserProfileService.getDisplayGrade(userProfile?.age || 8)}年級</p>
+                  <p><span className="font-semibold">年級：</span>國小 {UserProfileService.getDisplayGrade(userProfile?.age || 8)} 年級</p>
                   <p><span className="font-semibold">AI 助手：</span>{userProfile?.aiModel?.toUpperCase()}</p>
                   <p><span className="font-semibold">加入時間：</span>{formatDate(userProfile?.createdAt || new Date())}</p>
                 </div>
@@ -698,16 +669,14 @@ const AdventurerCabin: React.FC = () => {
             </div>
           )}
 
-          {/* Navigation */}
-          <div className="text-center">
-            <Link
-              to="/guild"
-              className="inline-block wood-texture text-white px-8 py-4 rounded-xl hover:scale-105 transition-transform font-bold text-lg shadow-lg"
-            >
-              🏛️ 返回冒險者公會
-            </Link>
-          </div>
         </div>
+
+        {/* Floating Navigation Button */}
+        <FloatingNavButton
+          to="/guild"
+          icon="ri-building-line"
+          label="冒險者公會"
+        />
       </div>
     </>
   );

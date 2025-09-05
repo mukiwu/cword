@@ -25,7 +25,7 @@ A gamified Chinese learning platform designed for elementary school students, fe
 
 1. Clone the repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/mukiwu/cword.git
 cd cword
 ```
 
@@ -55,11 +55,28 @@ npm run dev
 
 ```
 src/
-├── components/          # React components
-│   ├── features/       # Feature-specific components
-│   ├── shared/         # Shared components
-│   └── ui/            # Base UI components
-├── hooks/              # Custom hooks
+├── App.tsx             # Main application component
+├── main.tsx            # Application entry point
+├── index.css           # Global styles
+├── assets/             # Static assets
+│   ├── avatars/       # Character avatar SVGs
+│   └── react.svg      # React logo
+├── components/         # React components
+│   ├── features/      # Feature-specific components (empty)
+│   ├── shared/        # Shared components
+│   │   └── FloatingNavButton.tsx
+│   ├── ui/            # Base UI components (Shadcn/ui)
+│   │   ├── button.tsx
+│   │   ├── card.tsx
+│   │   ├── input.tsx
+│   │   ├── label.tsx
+│   │   └── select.tsx
+│   ├── ApiConfigModal.tsx
+│   ├── PageHeader.tsx
+│   └── TaskExecutionModal.tsx
+├── hooks/              # Custom hooks (empty)
+├── lib/                # Library utilities
+│   └── utils.ts       # Utility functions (cn helper)
 ├── pages/              # Page components
 │   ├── ProfileSetup.tsx
 │   ├── AdventurerGuild.tsx
@@ -70,8 +87,14 @@ src/
 │   ├── ai.service.ts
 │   ├── taskGeneration.service.ts
 │   └── weeklyLedger.service.ts
+├── styles/             # Additional styles (empty)
 ├── types/              # TypeScript type definitions
-└── utils/              # Utility functions
+│   ├── index.ts       # Main type exports
+│   └── hanzi-writer.d.ts
+├── utils/              # Utility functions
+│   └── cn.ts          # Class name utilities
+├── test-setup.ts       # Test configuration
+└── vite-env.d.ts      # Vite environment types
 ```
 
 ## 🎯 Usage Guide
@@ -85,12 +108,17 @@ src/
 ### Daily Usage
 1. **Adventurer Guild**: View and complete daily learning tasks
 2. **Adventurer Cabin**: Check learning progress and rewards
-3. **Weekly Treasure Settlement**: Claim reward certificates every Sunday after 8 PM
+3. **Weekly Learning Coin Settlement**: Exchange learning coins for cash every Sunday. Default ratio is 10:1 (100 learning coins = NT$10), giving children a sense of achievement and pocket money through gaming
 
 ### Reward System
 - **Character Tasks**: 5-10 learning coins (based on stroke count and repetitions)
 - **Word Application**: Fixed 7 learning coins
 - **Word Writing**: 6 learning coins + repetition bonus
+
+## 💬 Feedback
+
+- For any questions or feature suggestions, please visit [GitHub Issues](https://github.com/mukiwu/cword/issues)
+- For any bugs or improvements, please submit [GitHub Pull Requests](https://github.com/mukiwu/cword/pulls)
 
 ## 🔧 Development Commands
 
