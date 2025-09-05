@@ -66,7 +66,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         {/* Top Row: Title */}
         <div className="flex items-center justify-center mb-4">
           <div className="w-12 h-12 guild-badge rounded-full flex items-center justify-center mr-3">
-            <span className="font-['Pacifico'] text-yellow-800 text-lg font-bold">{icon}</span>
+            <span>{icon}</span>
           </div>
           <h1 className="text-2xl font-bold text-white drop-shadow-lg">
             {title}
@@ -114,7 +114,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
       <div className="hidden md:flex justify-between items-center">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 guild-badge rounded-full flex items-center justify-center">
-            <span className="font-['Pacifico'] text-yellow-800 text-xl font-bold">{icon}</span>
+            <span>{icon}</span>
           </div>
           <h1 className="text-3xl lg:text-4xl font-bold text-white drop-shadow-lg">
             {title}

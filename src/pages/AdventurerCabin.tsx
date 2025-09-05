@@ -330,7 +330,7 @@ const AdventurerCabin: React.FC = () => {
   return (
     <>
       <style>{styles}</style>
-      <div className="min-h-screen p-4"
+      <div className="min-h-screen"
            style={{
              backgroundImage: `url('${import.meta.env.BASE_URL}bg.jpg')`,
              backgroundSize: 'cover',
