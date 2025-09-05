@@ -10,3 +10,5 @@ declare global {
     ) => void;
   }
 }
+
+export {};
