@@ -293,7 +293,7 @@ export class TaskGenerationService {
     const unusedChars = content.characters.filter(char => !usedSet.has(char));
     const charToUse = unusedChars.length > 0 ? unusedChars[0] : content.characters[0];
     
-    const strokes = this.estimateStrokes(charToUse);
+    const strokes = await this.getActualStrokes(charToUse);
     const repetitions = Math.max(5, Math.min(10, Math.ceil(strokes / 2)));
     const [minStroke, maxStroke] = content.strokeRange;
     
@@ -339,7 +339,7 @@ export class TaskGenerationService {
     const unusedWords = content.words.filter(word => !usedSet.has(word));
     const wordToUse = unusedWords.length > 0 ? unusedWords[0] : content.words[0];
     
-    const wordReward = this.calculateWordReward(wordToUse, grade, content.strokeRange);
+    const wordReward = await this.calculateWordReward(wordToUse, grade, content.strokeRange);
     const wordRepetitions = Math.max(5, Math.min(8, wordToUse.length * 3));
     
     tasks.push({
@@ -357,7 +357,7 @@ export class TaskGenerationService {
     const unusedPhrases = content.phrases.filter(phrase => !usedSet.has(phrase));
     const phraseToUse = unusedPhrases.length > 0 ? unusedPhrases[0] : content.phrases[0];
     
-    const phraseReward = this.calculatePhraseReward(phraseToUse, grade, content.strokeRange);
+    const phraseReward = await this.calculatePhraseReward(phraseToUse, grade, content.strokeRange);
     
     tasks.push({
       id: uuidv4(),
@@ -375,13 +375,11 @@ export class TaskGenerationService {
 
   // 新增：估算字的筆劃數（擴展更多較難字詞）
   // 新增：計算詞語練習獎勵（考慮年級標準）
-  private static calculateWordReward(word: string, grade: number, strokeRange: [number, number]): number {
+  private static async calculateWordReward(word: string, grade: number, strokeRange: [number, number]): Promise<number> {
     let reward = 5; // 基礎獎勵（比單字高）
     
     // 計算詞語總筆畫數
-    const totalStrokes = Array.from(word).reduce((sum, char) => {
-      return sum + this.estimateStrokes(char);
-    }, 0);
+    const totalStrokes = await this.getWordTotalStrokes(word);
     
     const [minStroke, maxStroke] = strokeRange;
     const averageStrokePerChar = totalStrokes / word.length;
@@ -404,13 +402,11 @@ export class TaskGenerationService {
   }
 
   // 新增：計算造句練習獎勵（考慮年級標準）
-  private static calculatePhraseReward(phrase: string, grade: number, strokeRange: [number, number]): number {
+  private static async calculatePhraseReward(phrase: string, grade: number, strokeRange: [number, number]): Promise<number> {
     let reward = 6; // 基礎獎勵最高（認知難度最高）
     
     // 評估詞語複雜度（根據長度和筆畫）
-    const totalStrokes = Array.from(phrase).reduce((sum, char) => {
-      return sum + this.estimateStrokes(char);
-    }, 0);
+    const totalStrokes = await this.getWordTotalStrokes(phrase);
     const wordLength = phrase.length;
     const [minStroke, maxStroke] = strokeRange;
     const averageStrokePerChar = totalStrokes / wordLength;
@@ -432,6 +428,35 @@ export class TaskGenerationService {
     return Math.min(reward, 10); // 造句練習上限 10
   }
 
+  // 獲取字的實際筆畫數（優先使用 hanzi-writer-data）
+  private static async getActualStrokes(char: string): Promise<number> {
+    try {
+      // 先嘗試從 hanzi-writer-data 獲取準確的筆畫數
+      const response = await fetch(`https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.0/${char}.json`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.strokes && Array.isArray(data.strokes)) {
+          return data.strokes.length;
+        }
+      }
+    } catch (error) {
+      console.warn(`Failed to fetch stroke data for ${char}, falling back to estimate`, error);
+    }
+    
+    // 備用：使用預估值
+    return this.estimateStrokes(char);
+  }
+
+  // 計算詞語總筆畫數
+  private static async getWordTotalStrokes(word: string): Promise<number> {
+    let totalStrokes = 0;
+    for (const char of word) {
+      totalStrokes += await this.getActualStrokes(char);
+    }
+    return totalStrokes;
+  }
+
+  // 備用筆畫估算（當無法獲取準確數據時使用）
   private static estimateStrokes(char: string): number {
     const strokeMap: Record<string, number> = {
       // 基礎字
@@ -475,7 +500,7 @@ export class TaskGenerationService {
       '維': 14, '探': 11, '索': 10, '研': 9, '究': 7
     };
     
-    return strokeMap[char] || 12; // 默認12劃
+    return strokeMap[char] || 12; // 默認12劃（僅作備用）
   }
 
   private static async updateWeeklyLedger(reward: number, taskId: string): Promise<void> {
