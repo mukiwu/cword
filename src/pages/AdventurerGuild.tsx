@@ -110,6 +110,7 @@ const AdventurerGuild: React.FC = () => {
   const [selectedTask, setSelectedTask] = useState<IDailyTask | null>(null);
 
   useEffect(() => {
+    document.title = '冒險者公會 | 生字冒險島';
     loadData();
   }, []);
 

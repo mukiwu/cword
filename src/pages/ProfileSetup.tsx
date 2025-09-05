@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserProfileService } from '../services/userProfile.service';
 import type { AIModel } from '../types';
@@ -160,6 +160,10 @@ const ProfileSetup: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = '開始冒險 | 生字冒險島';
+  }, []);
 
   // 頭像選項定義 - 像素風格職業頭像
   const avatars = [
