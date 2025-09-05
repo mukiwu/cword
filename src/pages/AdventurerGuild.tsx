@@ -284,17 +284,6 @@ const AdventurerGuild: React.FC = () => {
     await loadData();
   };
 
-  const handleLogout = async () => {
-    if (confirm('確定要登出嗎？這將會清除所有學習紀錄和設定。')) {
-      try {
-        await DatabaseService.clearAllData();
-        window.location.href = '/';
-      } catch (err) {
-        console.error('Logout failed:', err);
-        setError('登出失敗，請重試');
-      }
-    }
-  };
 
   const getTaskIcon = (type: IDailyTask['type']) => {
     switch (type) {
@@ -377,7 +366,6 @@ const AdventurerGuild: React.FC = () => {
           title="冒險者公會"
           icon="🏛️"
           userProfile={userProfile}
-          onLogout={handleLogout}
         />
 
         <div className="px-6 pb-6">
