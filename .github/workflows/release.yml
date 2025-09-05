@@ -110,14 +110,15 @@ jobs:
             COMMITS=$(git log ${LATEST_TAG}..HEAD --oneline --pretty=format:"%s")
           fi
           
-          # 將多行 commits 轉換為單行，用分號分隔
+          # 將 commits 格式化為多行列表
           COMMIT_LIST=""
           while IFS= read -r line; do
             if [ -n "$line" ]; then
               if [ -n "$COMMIT_LIST" ]; then
-                COMMIT_LIST="$COMMIT_LIST; $line"
+                COMMIT_LIST="$COMMIT_LIST
+- $line"
               else
-                COMMIT_LIST="$line"
+                COMMIT_LIST="- $line"
               fi
             fi
           done <<< "$COMMITS"
@@ -138,10 +139,19 @@ jobs:
           VERSION_TYPE="${{ steps.generate-version.outputs.version_type }}"
           COMMIT_LIST="${{ steps.get-commits.outputs.commit_list }}"
           
-          # 創建帶版本類型說明的 release
+          # 創建格式化的 release notes
+          RELEASE_NOTES="## $VERSION_TYPE
+
+## Changes
+$COMMIT_LIST
+
+---
+🚀 **Deployed to**: https://${{ github.repository_owner }}.github.io/cword"
+          
+          # 創建 release
           gh release create "$NEW_VERSION" \
             --title "Release $NEW_VERSION" \
-            --notes "**$VERSION_TYPE** - $COMMIT_LIST" \
+            --notes "$RELEASE_NOTES" \
             --latest
 
       - name: Update deployment info
