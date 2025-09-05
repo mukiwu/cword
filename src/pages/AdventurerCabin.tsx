@@ -81,6 +81,7 @@ const AdventurerCabin: React.FC = () => {
   const [exchangeResult, setExchangeResult] = useState<any>(null);
 
   useEffect(() => {
+    document.title = '冒險者小屋 | 生字冒險島';
     loadData();
   }, []);
 
