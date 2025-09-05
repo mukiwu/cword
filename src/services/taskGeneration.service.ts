@@ -512,4 +512,26 @@ export class TaskGenerationService {
       task.date <= endDate
     );
   }
+
+  /**
+   * 清除今日任務，用於重新生成任務（例如更換 API Key 後）
+   */
+  static async clearTodaysTasks(): Promise<void> {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const todayTasks = await this.getTasksForDate(today);
+      
+      // 刪除今日所有任務
+      for (const task of todayTasks) {
+        await DatabaseService.delete('dailyTasks', task.id);
+      }
+      
+      console.log(`已清除 ${todayTasks.length} 個今日任務`);
+    } catch (error) {
+      console.error('清除今日任務失敗:', error);
+      throw error;
+    }
+  }
 }

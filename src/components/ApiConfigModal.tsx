@@ -19,18 +19,27 @@ const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
   const [apiKey, setApiKey] = useState('');
   const [selectedModel, setSelectedModel] = useState<AIModel>(currentModel);
   const [isLoading, setIsLoading] = useState(false);
+  const [localError, setLocalError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!apiKey.trim()) return;
 
     setIsLoading(true);
+    setLocalError(''); // 清除之前的錯誤
     try {
       await onSave(apiKey, selectedModel);
       setApiKey('');
+      setLocalError('');
       onClose();
     } catch (err) {
       console.error('Failed to save API config:', err);
+      // 顯示具體的錯誤訊息
+      if (err instanceof Error) {
+        setLocalError(err.message);
+      } else {
+        setLocalError('設定失敗，請重試');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -49,6 +58,14 @@ const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
     }
   };
 
+  // 當模態框打開時，清除本地錯誤並重置選擇的模型
+  React.useEffect(() => {
+    if (isOpen) {
+      setLocalError('');
+      setSelectedModel(currentModel);
+    }
+  }, [isOpen, currentModel]);
+
   if (!isOpen) return null;
 
   return (
@@ -59,9 +76,9 @@ const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
           <p className="text-gray-600">請選擇 AI 模型並輸入對應的 API Key</p>
         </div>
 
-        {error && (
+        {(localError || error) && (
           <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg mb-4 text-sm">
-            <strong>錯誤：</strong>{error}
+            <strong>錯誤：</strong>{localError || error}
           </div>
         )}
 
@@ -112,7 +129,7 @@ const ApiConfigModal: React.FC<ApiConfigModalProps> = ({
               disabled={isLoading || !apiKey.trim()}
               className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 font-medium"
             >
-              {isLoading ? '設定中...' : '確認設定'}
+              {isLoading ? '驗證中...' : '確認設定'}
             </button>
           </div>
         </form>
