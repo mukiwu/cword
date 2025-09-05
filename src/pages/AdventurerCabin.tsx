@@ -175,13 +175,32 @@ const AdventurerCabin: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    if (confirm('確定要登出嗎？這將會清除所有學習紀錄和設定。')) {
+    if (confirm('確定要刪除帳號嗎？這將會清除所有的學習紀錄和設定，而且無法還原。')) {
       try {
         await DatabaseService.clearAllData();
         window.location.href = '/';
       } catch (err) {
         console.error('Logout failed:', err);
-        alert('登出失敗，請重試');
+        alert('刪除帳號失敗，請重試');
+      }
+    }
+  };
+
+  const handleDeleteApiKey = () => {
+    if (confirm('確定要刪除 API Key 嗎？刪除後需要重新設定才能繼續使用 AI 助手。')) {
+      try {
+        // 清除所有可能的 API Key 儲存
+        localStorage.removeItem('ai_api_key');
+        localStorage.removeItem('ai_model');
+        localStorage.removeItem('openai_api_key');
+        localStorage.removeItem('claude_api_key');
+        localStorage.removeItem('gemini_api_key');
+        alert('API Key 已刪除，請重新設定後繼續使用');
+        // 可以選擇重新載入頁面或導向設定頁面
+        window.location.reload();
+      } catch (err) {
+        console.error('Delete API Key failed:', err);
+        alert('刪除 API Key 失敗，請重試');
       }
     }
   };
@@ -341,7 +360,6 @@ const AdventurerCabin: React.FC = () => {
           title="冒險者小屋"
           icon="🏠"
           userProfile={userProfile}
-          onLogout={handleLogout}
         />
 
         <div className="px-6 pb-6">
@@ -377,6 +395,15 @@ const AdventurerCabin: React.FC = () => {
                   <p><span className="font-semibold">年級：</span>國小 {UserProfileService.getDisplayGrade(userProfile?.age || 8)} 年級</p>
                   <p><span className="font-semibold">AI 助手：</span>{userProfile?.aiModel?.toUpperCase()}</p>
                   <p><span className="font-semibold">加入時間：</span>{formatDate(userProfile?.createdAt || new Date())}</p>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={handleDeleteApiKey}
+                    className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded-lg text-sm transition-colors hover:cursor-pointer"
+                    title="刪除 API Key"
+                  >
+                    刪除 API Key
+                  </button>
                 </div>
               </div>
             </div>
@@ -677,6 +704,16 @@ const AdventurerCabin: React.FC = () => {
           icon="ri-building-line"
           label="冒險者公會"
         />
+        
+        {/* Delete Account Link at bottom */}
+        <div className="text-center pb-8">
+          <button
+            onClick={handleLogout}
+            className="text-red-400 hover:text-gray-500 text-sm underline transition-colors hover:cursor-pointer"
+          >
+            刪除帳號
+          </button>
+        </div>
       </div>
     </>
   );

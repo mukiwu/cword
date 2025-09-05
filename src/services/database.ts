@@ -85,9 +85,12 @@ export class DatabaseService {
       await db.dailyTasks.clear();
       await db.weeklyLedger.clear();
       
-      // Clear session storage for API keys
-      sessionStorage.removeItem('ai_api_key');
-      sessionStorage.removeItem('ai_model');
+      // Clear local storage for API keys
+      localStorage.removeItem('ai_api_key');
+      localStorage.removeItem('ai_model');
+      localStorage.removeItem('openai_api_key');
+      localStorage.removeItem('claude_api_key');
+      localStorage.removeItem('gemini_api_key');
       
       console.log('All data cleared successfully');
     } catch (error) {

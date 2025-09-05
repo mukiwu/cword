@@ -122,9 +122,9 @@ const AdventurerGuild: React.FC = () => {
       const profile = await UserProfileService.getUserProfile();
       setUserProfile(profile || null);
 
-      // Get API configuration from session storage
-      const apiKey = sessionStorage.getItem('ai_api_key');
-      const aiModel = sessionStorage.getItem('ai_model') as 'gemini' | 'openai' | 'claude';
+      // Get API configuration from local storage
+      const apiKey = localStorage.getItem('ai_api_key');
+      const aiModel = localStorage.getItem('ai_model') as 'gemini' | 'openai' | 'claude';
 
       if (!apiKey || !aiModel) {
         const configError = new AIServiceError('API 設定遺失，請重新設定', 'AUTH_ERROR');
@@ -256,9 +256,9 @@ const AdventurerGuild: React.FC = () => {
 
   const handleApiConfigSave = async (apiKey: string, model: AIModel) => {
     try {
-      // Update session storage
-      sessionStorage.setItem('ai_api_key', apiKey);
-      sessionStorage.setItem('ai_model', model);
+      // Update local storage
+      localStorage.setItem('ai_api_key', apiKey);
+      localStorage.setItem('ai_model', model);
 
       // Update user profile
       if (userProfile && userProfile.id) {
