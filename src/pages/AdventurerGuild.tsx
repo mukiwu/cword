@@ -4,7 +4,6 @@ import { AIServiceError } from '../types';
 import { TaskGenerationService } from '../services/taskGeneration.service';
 import { UserProfileService } from '../services/userProfile.service';
 import { WeeklyLedgerService } from '../services/weeklyLedger.service';
-import { DatabaseService } from '../services/database';
 import ApiConfigModal from '../components/ApiConfigModal';
 import TaskExecutionModal from '../components/TaskExecutionModal';
 import { PageHeader } from '../components/PageHeader';
