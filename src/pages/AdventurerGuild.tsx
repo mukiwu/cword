@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import type { IDailyTask, IUserProfile, AIModel } from '../types';
 import { AIServiceError } from '../types';
 import { TaskGenerationService } from '../services/taskGeneration.service';
@@ -9,27 +8,8 @@ import { DatabaseService } from '../services/database';
 import ApiConfigModal from '../components/ApiConfigModal';
 import TaskExecutionModal from '../components/TaskExecutionModal';
 import { PageHeader } from '../components/PageHeader';
+import { FloatingNavButton } from '../components/shared/FloatingNavButton';
 
-// 導入職業頭像圖片
-import warriorSvg from '@/assets/avatars/warrior.svg';
-import mageSvg from '@/assets/avatars/mage.svg';
-import archerSvg from '@/assets/avatars/archer.svg';
-import healerSvg from '@/assets/avatars/healer.svg';
-import explorerSvg from '@/assets/avatars/explorer.svg';
-import scholarSvg from '@/assets/avatars/scholar.svg';
-
-// 頭像映射函數
-const getAvatarSrc = (avatarId: string): string => {
-  const avatarMap: Record<string, string> = {
-    warrior: warriorSvg,
-    mage: mageSvg,
-    archer: archerSvg,
-    healer: healerSvg,
-    explorer: explorerSvg,
-    scholar: scholarSvg,
-  };
-  return avatarMap[avatarId] || warriorSvg; // 默認使用戰士圖片
-};
 
 // 添加自定義 CSS 樣式 - 採用 docs/main.html 的設計風格
 const styles = `
@@ -589,19 +569,11 @@ const AdventurerGuild: React.FC = () => {
         </div>
 
         {/* Floating Navigation Button */}
-        <div className="fixed bottom-6 right-6 group">
-          <Link
-            to="/cabin"
-            className="w-16 h-16 bg-yellow-600 hover:bg-yellow-700 transition-colors rounded-full shadow-lg flex items-center justify-center"
-          >
-            <div className="w-8 h-8 flex items-center justify-center">
-              <i className="ri-home-4-fill text-white text-2xl"></i>
-            </div>
-          </Link>
-          <div className="absolute bottom-20 right-0 bg-black bg-opacity-75 text-white px-3 py-1 rounded-lg text-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            冒險者小屋
-          </div>
-        </div>
+        <FloatingNavButton
+          to="/cabin"
+          icon="ri-home-4-fill"
+          label="冒險者小屋"
+        />
 
         {/* API Config Modal */}
         <ApiConfigModal

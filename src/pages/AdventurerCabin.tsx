@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import type { IUserProfile, IWeeklyLedger, ICoinExchange } from '../types';
 import { UserProfileService } from '../services/userProfile.service';
 import { WeeklyLedgerService } from '../services/weeklyLedger.service';
 import { TaskGenerationService } from '../services/taskGeneration.service';
 import { DatabaseService } from '../services/database';
 import { PageHeader } from '../components/PageHeader';
+import { FloatingNavButton } from '../components/shared/FloatingNavButton';
 
 // 導入職業頭像圖片
 import warriorSvg from '@/assets/avatars/warrior.svg';
@@ -669,16 +669,14 @@ const AdventurerCabin: React.FC = () => {
             </div>
           )}
 
-          {/* Navigation */}
-          <div className="text-center">
-            <Link
-              to="/guild"
-              className="inline-block wood-texture text-white px-8 py-4 rounded-xl hover:scale-105 transition-transform font-bold text-lg shadow-lg"
-            >
-              🏛️ 返回冒險者公會
-            </Link>
-          </div>
         </div>
+
+        {/* Floating Navigation Button */}
+        <FloatingNavButton
+          to="/guild"
+          icon="ri-building-line"
+          label="冒險者公會"
+        />
       </div>
     </>
   );
