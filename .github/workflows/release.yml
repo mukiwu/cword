@@ -1,0 +1,98 @@
+name: Auto Release After Deploy
+
+on:
+  workflow_run:
+    workflows: ["Build and Deploy to GitHub Pages"]
+    branches: [main]
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: get-latest-tag
+        run: |
+          # 獲取最新的 tag，如果沒有則使用 v0.0.0
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
+      - name: Generate new version
+        id: generate-version
+        run: |
+          LATEST_TAG="${{ steps.get-latest-tag.outputs.latest_tag }}"
+          # 移除 v 前綴
+          VERSION=${LATEST_TAG#v}
+          # 拆分版本號
+          IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
+          MAJOR=${VERSION_PARTS[0]:-0}
+          MINOR=${VERSION_PARTS[1]:-0}
+          PATCH=${VERSION_PARTS[2]:-0}
+          # 自動遞增 patch 版本
+          NEW_PATCH=$((PATCH + 1))
+          NEW_VERSION="v$MAJOR.$MINOR.$NEW_PATCH"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Get commits since last tag
+        id: get-commits
+        run: |
+          LATEST_TAG="${{ steps.get-latest-tag.outputs.latest_tag }}"
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            # 如果是第一個 release，獲取所有 commits
+            COMMITS=$(git log --oneline --pretty=format:"%s" | head -20)
+          else
+            # 獲取自上次 tag 以來的 commits
+            COMMITS=$(git log ${LATEST_TAG}..HEAD --oneline --pretty=format:"%s")
+          fi
+          
+          # 將多行 commits 轉換為單行，用分號分隔
+          COMMIT_LIST=""
+          while IFS= read -r line; do
+            if [ -n "$line" ]; then
+              if [ -n "$COMMIT_LIST" ]; then
+                COMMIT_LIST="$COMMIT_LIST; $line"
+              else
+                COMMIT_LIST="$line"
+              fi
+            fi
+          done <<< "$COMMITS"
+          
+          # 如果沒有新的 commits，使用默認信息
+          if [ -z "$COMMIT_LIST" ]; then
+            COMMIT_LIST="Minor updates and improvements"
+          fi
+          
+          echo "commit_list=$COMMIT_LIST" >> $GITHUB_OUTPUT
+          echo "Commits: $COMMIT_LIST"
+
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW_VERSION="${{ steps.generate-version.outputs.new_version }}"
+          COMMIT_LIST="${{ steps.get-commits.outputs.commit_list }}"
+          
+          # 創建 release
+          gh release create "$NEW_VERSION" \
+            --title "Release $NEW_VERSION" \
+            --notes "$COMMIT_LIST" \
+            --latest
+
+      - name: Update deployment info
+        run: |
+          echo "✅ Successfully created release ${{ steps.generate-version.outputs.new_version }}"
+          echo "📦 Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.generate-version.outputs.new_version }}"
+          echo "🚀 Deployed to: https://${{ github.repository_owner }}.github.io/cword"
