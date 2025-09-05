@@ -15,12 +15,104 @@ interface AIResponse {
 }
 
 export class AIService {
+  /**
+   * 驗證 API Key 是否有效 - 只檢查 HTTP 200 狀態碼
+   * @param config API 配置
+   * @returns Promise<boolean> 驗證結果
+   */
+  static async validateApiKey(config: AIAPIConfig): Promise<boolean> {
+    try {
+      let response: Response;
+
+      switch (config.model) {
+        case 'gemini':
+          response = await fetch(
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': config.apiKey,
+              },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: '測試' }] }],
+              }),
+            }
+          );
+          break;
+
+        case 'openai':
+          response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${config.apiKey}`,
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [{ role: 'user', content: '測試' }],
+              max_tokens: 5,
+            }),
+          });
+          break;
+
+        case 'claude':
+          response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': config.apiKey,
+              'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify({
+              model: 'claude-3-5-sonnet-20241022',
+              max_tokens: 5,
+              messages: [{ role: 'user', content: '測試' }],
+            }),
+          });
+          break;
+
+        default:
+          throw new AIServiceError(`不支援的 AI 模型: ${config.model}`, 'AUTH_ERROR');
+      }
+
+      // 只檢查是否回傳 200 狀態碼，不解析回應內容
+      if (response.status === 200) {
+        return true;
+      } else {
+        // 根據狀態碼提供更具體的錯誤訊息
+        if (response.status === 400) {
+          throw new AIServiceError('API Key 格式錯誤或請求參數有誤', 'AUTH_ERROR');
+        } else if (response.status === 401 || response.status === 403) {
+          throw new AIServiceError('API Key 無效或權限不足', 'AUTH_ERROR');
+        } else if (response.status === 429) {
+          throw new AIServiceError('API 請求次數過多，請稍後再試', 'RATE_LIMIT');
+        } else {
+          throw new AIServiceError(`API 錯誤：${response.status} ${response.statusText}`, 'NETWORK_ERROR');
+        }
+      }
+
+    } catch (error) {
+      console.error('API Key validation failed:', error);
+
+      if (error instanceof AIServiceError) {
+        throw error;
+      }
+
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new AIServiceError('網路連線失敗，請檢查網路連線', 'NETWORK_ERROR', error);
+      }
+
+      throw new AIServiceError('API Key 驗證時發生未知錯誤', 'UNKNOWN', error);
+    }
+  }
+
   static async generateTaskContent(
     config: AIAPIConfig,
     request: TaskGenerationRequest
   ): Promise<AIResponse> {
     const prompt = this.buildPrompt(request);
-    
+
     try {
       switch (config.model) {
         case 'gemini':
@@ -43,18 +135,18 @@ export class AIService {
 
   private static buildPrompt(request: TaskGenerationRequest): string {
     const previousTasksList = (request.previousTasks && request.previousTasks.length > 0)
-      ? request.previousTasks.join('、') 
+      ? request.previousTasks.join('、')
       : '無';
-    
+
     // 計算學習年級和筆畫範圍
     const learningGrade = request.grade;
     const strokeRanges = {
-      1: '5-10', 2: '8-13', 3: '10-16', 4: '13-20', 
+      1: '5-10', 2: '8-13', 3: '10-16', 4: '13-20',
       5: '16-25', 6: '16-25', 7: '18-30'
     };
     const difficultyLevels = {
-      1: '二年級程度', 2: '三年級程度', 3: '四年級程度', 
-      4: '五年級程度', 5: '六年級程度', 6: '六年級程度', 
+      1: '二年級程度', 2: '三年級程度', 3: '四年級程度',
+      4: '五年級程度', 5: '六年級程度', 6: '六年級程度',
       7: '六年級進階（含冷僻字）'
     };
 
@@ -156,6 +248,12 @@ ${learningGrade === 7 ? '- 六年級進階額外獎勵：+1學習幣' : ''}
       );
 
       if (!response.ok) {
+        if (response.status === 400) {
+          throw new AIServiceError(
+            'Gemini API Key 格式錯誤或請求參數有誤',
+            'AUTH_ERROR'
+          );
+        }
         if (response.status === 401 || response.status === 403) {
           throw new AIServiceError(
             'API Key 無效或權限不足，請檢查你的 Gemini API Key',
@@ -176,7 +274,7 @@ ${learningGrade === 7 ? '- 六年級進階額外獎勵：+1學習幣' : ''}
 
       const data = await response.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      
+
       if (!text) {
         throw new AIServiceError('Gemini API 沒有回傳內容', 'INVALID_RESPONSE');
       }
@@ -209,6 +307,12 @@ ${learningGrade === 7 ? '- 六年級進階額外獎勵：+1學習幣' : ''}
       });
 
       if (!response.ok) {
+        if (response.status === 400) {
+          throw new AIServiceError(
+            'OpenAI API Key 格式錯誤或請求參數有誤',
+            'AUTH_ERROR'
+          );
+        }
         if (response.status === 401) {
           throw new AIServiceError(
             'API Key 無效或權限不足，請檢查你的 OpenAI API Key',
@@ -229,7 +333,7 @@ ${learningGrade === 7 ? '- 六年級進階額外獎勵：+1學習幣' : ''}
 
       const data = await response.json();
       const text = data.choices?.[0]?.message?.content;
-      
+
       if (!text) {
         throw new AIServiceError('OpenAI API 沒有回傳內容', 'INVALID_RESPONSE');
       }
@@ -263,6 +367,12 @@ ${learningGrade === 7 ? '- 六年級進階額外獎勵：+1學習幣' : ''}
       });
 
       if (!response.ok) {
+        if (response.status === 400) {
+          throw new AIServiceError(
+            'Claude API Key 格式錯誤或請求參數有誤',
+            'AUTH_ERROR'
+          );
+        }
         if (response.status === 401) {
           throw new AIServiceError(
             'API Key 無效或權限不足，請檢查你的 Claude API Key',
@@ -283,7 +393,7 @@ ${learningGrade === 7 ? '- 六年級進階額外獎勵：+1學習幣' : ''}
 
       const data = await response.json();
       const text = data.content?.[0]?.text;
-      
+
       if (!text) {
         throw new AIServiceError('Claude API 沒有回傳內容', 'INVALID_RESPONSE');
       }
@@ -307,21 +417,21 @@ ${learningGrade === 7 ? '- 六年級進階額外獎勵：+1學習幣' : ''}
       if (!jsonMatch) {
         throw new AIServiceError('AI 回應中沒有找到 JSON 格式的內容', 'INVALID_RESPONSE');
       }
-      
+
       const parsed = JSON.parse(jsonMatch[0]);
-      
+
       if (!parsed.tasks || !Array.isArray(parsed.tasks)) {
         throw new AIServiceError('AI 回應格式不正確，缺少任務陣列', 'INVALID_RESPONSE');
       }
-      
+
       return parsed;
     } catch (error) {
       console.error('Failed to parse AI response:', text);
-      
+
       if (error instanceof AIServiceError) {
         throw error;
       }
-      
+
       // Return fallback tasks if parsing fails
       console.warn('使用預設任務作為備用方案');
       return {

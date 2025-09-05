@@ -114,6 +114,22 @@ const AdventurerGuild: React.FC = () => {
     loadData();
   }, []);
 
+  // 檢查試用是否已到期
+  const isTrialExpired = () => {
+    const isTrialMode = localStorage.getItem('is_trial_mode') === 'true';
+    if (!isTrialMode) return false;
+
+    const firstUsedDate = localStorage.getItem('trial_first_used_date');
+    if (!firstUsedDate) return false;
+    
+    const firstUsed = new Date(firstUsedDate);
+    const today = new Date();
+    const diffTime = today.getTime() - firstUsed.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays >= 7;
+  };
+
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -125,6 +141,14 @@ const AdventurerGuild: React.FC = () => {
       // Get API configuration from local storage or trial mode
       const isTrialMode = localStorage.getItem('is_trial_mode') === 'true';
       let apiKey = localStorage.getItem('ai_api_key');
+      
+      // 檢查試用是否到期
+      if (isTrialExpired()) {
+        const configError = new AIServiceError('試用期已結束，請設定自己的 API Key 繼續使用', 'AUTH_ERROR');
+        setApiError(configError);
+        setError('試用期已結束，請設定自己的 API Key 繼續使用');
+        return;
+      }
       
       // 如果是試用模式且沒有儲存的 API Key，使用環境變數
       if (isTrialMode && !apiKey) {
@@ -263,9 +287,21 @@ const AdventurerGuild: React.FC = () => {
 
   const handleApiConfigSave = async (apiKey: string, model: AIModel) => {
     try {
-      // Update local storage
+      // 首先驗證 API Key 是否有效
+      console.log('正在驗證 API Key...');
+      const { AIService } = await import('../services/ai.service');
+      await AIService.validateApiKey({ apiKey, model });
+      console.log('API Key 驗證成功');
+
+      // 驗證成功後才更新本地存儲
       localStorage.setItem('ai_api_key', apiKey);
       localStorage.setItem('ai_model', model);
+      
+      // 如果是從試用期結束後設定新 API Key，清除試用模式狀態
+      if (isTrialExpired()) {
+        localStorage.removeItem('is_trial_mode');
+        localStorage.removeItem('trial_first_used_date');
+      }
 
       // Update user profile
       if (userProfile && userProfile.id) {
@@ -274,12 +310,17 @@ const AdventurerGuild: React.FC = () => {
         });
       }
 
-      // Clear errors and reload data
+      // 清除今日任務以強制重新生成，使用已驗證的新 API Key
+      const { TaskGenerationService } = await import('../services/taskGeneration.service');
+      await TaskGenerationService.clearTodaysTasks();
+
+      // Clear errors and reload data - 這會使用已驗證的新 API Key 生成任務
       setError('');
       setApiError(null);
       await loadData();
     } catch (err) {
       console.error('Failed to save API config:', err);
+      // 如果驗證失敗，不要保存到本地存儲，直接拋出錯誤讓 modal 顯示
       throw err;
     }
   };
