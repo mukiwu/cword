@@ -182,7 +182,9 @@ const styles = `
 `;
 
 const ProfileSetup: React.FC = () => {
-  const [isTrialMode, setIsTrialMode] = useState(true); // 預設為試用模式
+  const [isTrialMode, setIsTrialMode] = useState(false); // 預設為非試用模式
+  const [isTrialAvailable, setIsTrialAvailable] = useState(false);
+  const [trialExpired, setTrialExpired] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     age: 8,
@@ -194,11 +196,55 @@ const ProfileSetup: React.FC = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // 試用模式的 API Key
-  const TRIAL_API_KEY = 'AIzaSyAQIfVARCdRE3XBZpAbTdkT6mGo304W32o';
+  // 試用模式的 API Key (從環境變數讀取)
+  const TRIAL_API_KEY = import.meta.env.VITE_TRIAL_API_KEY;
+  const TRIAL_STORAGE_KEY = 'trial_first_used_date';
+
+  // 檢查試用是否可用 (7天試用期)
+  const checkTrialAvailability = () => {
+    const firstUsedDate = localStorage.getItem(TRIAL_STORAGE_KEY);
+    
+    if (!firstUsedDate) {
+      // 從未使用過試用，可以使用
+      return true;
+    }
+    
+    const firstUsed = new Date(firstUsedDate);
+    const today = new Date();
+    
+    // 計算天數差異
+    const diffTime = today.getTime() - firstUsed.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    // 7天試用期內可以使用
+    return diffDays < 7;
+  };
+
+  // 取得剩餘試用天數
+  const getRemainingTrialDays = () => {
+    const firstUsedDate = localStorage.getItem(TRIAL_STORAGE_KEY);
+    if (!firstUsedDate) return 7;
+    
+    const firstUsed = new Date(firstUsedDate);
+    const today = new Date();
+    const diffTime = today.getTime() - firstUsed.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    return Math.max(0, 7 - diffDays);
+  };
 
   useEffect(() => {
     document.title = '開始冒險 | 生字冒險島';
+    
+    // 檢查試用可用性
+    const trialAvailable = checkTrialAvailability();
+    setIsTrialAvailable(trialAvailable);
+    setTrialExpired(!trialAvailable && !!localStorage.getItem(TRIAL_STORAGE_KEY));
+    
+    // 如果試用可用，預設選擇試用模式
+    if (trialAvailable) {
+      setIsTrialMode(true);
+    }
   }, []);
 
   // 當切換到試用模式時，自動設定為 Gemini
@@ -260,9 +306,21 @@ const ProfileSetup: React.FC = () => {
     setError('');
 
     try {
-      // Store API key in local storage
-      localStorage.setItem('ai_api_key', apiKey);
-      localStorage.setItem('ai_model', formData.aiModel);
+      if (isTrialMode) {
+        // 試用模式：不儲存 API Key，直接使用環境變數，只記錄試用狀態
+        localStorage.setItem('ai_model', formData.aiModel);
+        localStorage.setItem('is_trial_mode', 'true');
+        
+        // 記錄試用開始日期
+        if (!localStorage.getItem(TRIAL_STORAGE_KEY)) {
+          localStorage.setItem(TRIAL_STORAGE_KEY, new Date().toISOString());
+        }
+      } else {
+        // 正式模式：API Key 存在 localStorage
+        localStorage.setItem('ai_api_key', apiKey);
+        localStorage.setItem('ai_model', formData.aiModel);
+        localStorage.removeItem('is_trial_mode');
+      }
 
       // Create user profile (without API key)
       await UserProfileService.createUser({
@@ -410,14 +468,26 @@ const ProfileSetup: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   {/* 試用模式 */}
                   <div 
-                    className={`mode-tab p-4 rounded-xl text-center ${isTrialMode ? 'active' : ''}`}
-                    onClick={() => setIsTrialMode(true)}
+                    className={`mode-tab p-4 rounded-xl text-center ${
+                      isTrialMode ? 'active' : ''
+                    } ${!isTrialAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => isTrialAvailable && setIsTrialMode(true)}
                   >
-                    <div className="tab-icon text-2xl mb-2">🚀</div>
-                    <h4 className="text-sm text-white mb-1">立即試用</h4>
-                    <p className="text-white">推薦新手</p>
-                    <div className="mt-2 px-2 py-1 bg-orange-500 bg-opacity-20 rounded text-sm text-black">
-                      免費體驗
+                    <div className="tab-icon text-2xl mb-2">
+                      {isTrialAvailable ? '🚀' : '⏰'}
+                    </div>
+                    <h4 className="text-sm text-white mb-1">
+                      {isTrialAvailable ? '立即試用' : '試用已結束'}
+                    </h4>
+                    <p className="text-white">
+                      {isTrialAvailable ? '推薦新手' : '7天試用已結束'}
+                    </p>
+                    <div className={`mt-2 px-2 py-1 rounded text-sm ${
+                      isTrialAvailable 
+                        ? 'bg-orange-500 bg-opacity-20 text-black'
+                        : 'bg-gray-500 bg-opacity-20 text-gray-400'
+                    }`}>
+                      {isTrialAvailable ? '免費體驗' : '已過期'}
                     </div>
                   </div>
                   
@@ -436,7 +506,42 @@ const ProfileSetup: React.FC = () => {
                 </div>
               </div>
 
-              {isTrialMode ? (
+              {/* 試用過期提示 */}
+              {trialExpired && !isTrialMode && (
+                <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 border-2 border-orange-400/50 rounded-xl p-4 mb-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <i className="ri-time-line text-white text-lg"></i>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-orange-300 mb-2">⏰ 試用期已結束</h4>
+                      <p className="text-orange-200 text-sm mb-3">
+                        你的7天試用期已結束！要繼續使用所有功能，請申請你專屬的免費 API Key。
+                      </p>
+                      <div className="bg-blue-50 bg-opacity-10 rounded-lg p-3 border border-blue-300 border-opacity-30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <i className="ri-gift-line text-blue-300"></i>
+                          <span className="text-sm font-medium text-blue-300">好消息！申請完全免費</span>
+                        </div>
+                        <p className="text-xs text-blue-200 mb-2">
+                          我們準備了詳細教學，只需要幾分鐘就能申請到你的專屬 API Key
+                        </p>
+                        <a
+                          href="https://muki.tw/free-google-gemini-api-key/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg font-medium transition-colors"
+                        >
+                          <i className="ri-external-link-line"></i>
+                          立即查看申請教學
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isTrialMode && isTrialAvailable && (
                 /* 試用模式說明 */
                 <div className="trial-info-box p-4">
                   <div className="flex items-start gap-3">
@@ -449,13 +554,16 @@ const ProfileSetup: React.FC = () => {
                         <li>• 使用 Google Gemini AI 助手</li>
                         <li>• 無需申請 API Key，立即開始學習</li>
                         <li>• 適合初次體驗的使用者</li>
-                        <li>⚠️ <span className="text-yellow-300">這是試用帳號，使用人數過多時可能會超過額度限制而無法使用</span></li>
+                        <li>⚠️ <span className="text-yellow-300">試用期限：7 天免費使用（剩餘 {getRemainingTrialDays()} 天）</span></li>
+                        <li>⚠️ <span className="text-yellow-300">使用人數過多時可能會超過額度限制而無法使用</span></li>
                         <li>💡 <span className="text-blue-300">建議申請個人 API Key 以獲得最佳體驗</span></li>
                       </ul>
                     </div>
                   </div>
                 </div>
-              ) : (
+              )}
+
+              {!isTrialMode && (
                 /* 自己 API Key 模式 */
                 <>
                   {/* AI 助手選擇 */}

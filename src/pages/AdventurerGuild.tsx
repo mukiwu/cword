@@ -122,8 +122,15 @@ const AdventurerGuild: React.FC = () => {
       const profile = await UserProfileService.getUserProfile();
       setUserProfile(profile || null);
 
-      // Get API configuration from local storage
-      const apiKey = localStorage.getItem('ai_api_key');
+      // Get API configuration from local storage or trial mode
+      const isTrialMode = localStorage.getItem('is_trial_mode') === 'true';
+      let apiKey = localStorage.getItem('ai_api_key');
+      
+      // 如果是試用模式且沒有儲存的 API Key，使用環境變數
+      if (isTrialMode && !apiKey) {
+        apiKey = import.meta.env.VITE_TRIAL_API_KEY;
+      }
+      
       const aiModel = localStorage.getItem('ai_model') as 'gemini' | 'openai' | 'claude';
 
       if (!apiKey || !aiModel) {
