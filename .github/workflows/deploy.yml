@@ -51,7 +51,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
-    # 無需條件檢查，因為只有 push 到 main 才會觸發整個 workflow
+    # 現在配置正確，只需要 push 到 main 分支即可觸發部署
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
