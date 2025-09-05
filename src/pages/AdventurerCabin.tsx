@@ -175,13 +175,13 @@ const AdventurerCabin: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    if (confirm('確定要登出嗎？這將會清除所有學習紀錄和設定。')) {
+    if (confirm('確定要刪除帳號嗎？這將會清除所有的學習紀錄和設定，而且無法還原。')) {
       try {
         await DatabaseService.clearAllData();
         window.location.href = '/';
       } catch (err) {
         console.error('Logout failed:', err);
-        alert('登出失敗，請重試');
+        alert('刪除帳號失敗，請重試');
       }
     }
   };
@@ -360,7 +360,6 @@ const AdventurerCabin: React.FC = () => {
           title="冒險者小屋"
           icon="🏠"
           userProfile={userProfile}
-          onLogout={handleLogout}
         />
 
         <div className="px-6 pb-6">
@@ -705,6 +704,16 @@ const AdventurerCabin: React.FC = () => {
           icon="ri-building-line"
           label="冒險者公會"
         />
+        
+        {/* Delete Account Link at bottom */}
+        <div className="text-center pb-8">
+          <button
+            onClick={handleLogout}
+            className="text-red-400 hover:text-gray-500 text-sm underline transition-colors hover:cursor-pointer"
+          >
+            刪除帳號
+          </button>
+        </div>
       </div>
     </>
   );

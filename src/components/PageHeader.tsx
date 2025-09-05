@@ -13,14 +13,12 @@ interface PageHeaderProps {
   title: string;
   icon: string;
   userProfile: IUserProfile | null;
-  onLogout: () => void;
 }
 
 export const PageHeader: React.FC<PageHeaderProps> = ({
   title,
   icon,
-  userProfile,
-  onLogout
+  userProfile
 }) => {
   const getAvatarSrc = (avatarId: string): string => {
     const avatarMap: Record<string, string> = {
@@ -99,13 +97,6 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             >
               <i className="ri-github-fill text-white text-lg"></i>
             </a>
-            <button
-              onClick={onLogout}
-              className="w-10 h-10 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center border-2 border-red-700 transition-colors"
-              title="登出"
-            >
-              <i className="ri-logout-box-line text-white text-lg"></i>
-            </button>
           </div>
         </div>
       </div>
@@ -142,13 +133,6 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           >
             <i className="ri-github-fill text-white text-xl"></i>
           </a>
-          <button
-            onClick={onLogout}
-            className="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-lg flex items-center justify-center border-2 border-red-700 transition-colors"
-            title="登出"
-          >
-            <i className="ri-logout-box-line text-white text-xl"></i>
-          </button>
         </div>
       </div>
     </header>
