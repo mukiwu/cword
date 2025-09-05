@@ -1,9 +1,25 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ProfileSetup from './pages/ProfileSetup';
 import AdventurerGuild from './pages/AdventurerGuild';
 import AdventurerCabin from './pages/AdventurerCabin';
 import { UserProfileService } from './services/userProfile.service';
+
+// Google Analytics 路由追蹤組件
+const GATracker = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    // 當路由變更時，發送頁面瀏覽事件到 GA
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('config', 'G-CDK16K8JLT', {
+        page_path: location.pathname + location.search,
+      });
+    }
+  }, [location]);
+
+  return null;
+};
 
 function App() {
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
@@ -35,6 +51,7 @@ function App() {
 
   return (
     <Router basename={basename}>
+      <GATracker />
       <Routes>
         <Route 
           path="/" 
