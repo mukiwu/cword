@@ -1,0 +1,165 @@
+name: Auto Release After Deploy
+
+on:
+  workflow_run:
+    workflows: ["Build and Deploy to GitHub Pages"]
+    branches: [main]
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: get-latest-tag
+        run: |
+          # 獲取最新的 tag，如果沒有則使用 v0.0.0
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
+      - name: Analyze commits and generate version
+        id: generate-version
+        run: |
+          LATEST_TAG="${{ steps.get-latest-tag.outputs.latest_tag }}"
+          # 移除 v 前綴
+          VERSION=${LATEST_TAG#v}
+          # 拆分版本號
+          IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
+          MAJOR=${VERSION_PARTS[0]:-0}
+          MINOR=${VERSION_PARTS[1]:-0}
+          PATCH=${VERSION_PARTS[2]:-0}
+          
+          # 獲取 commit messages 進行分析
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            COMMITS=$(git log --oneline --pretty=format:"%s" | head -20)
+          else
+            COMMITS=$(git log ${LATEST_TAG}..HEAD --oneline --pretty=format:"%s")
+          fi
+          
+          # 語義化版本判斷邏輯
+          BREAKING_CHANGE=false
+          NEW_FEATURE=false
+          BUG_FIX=false
+          
+          while IFS= read -r commit; do
+            # 檢查破壞性變更 (MAJOR bump)
+            if [[ "$commit" == *"BREAKING CHANGE"* ]] || [[ "$commit" =~ ^[^:]+!: ]] || [[ "$commit" == *"💥"* ]]; then
+              BREAKING_CHANGE=true
+            # 檢查新功能 (MINOR bump)  
+            elif [[ "$commit" =~ ^(feat|✨|🚀).* ]] || [[ "$commit" == *"feat:"* ]] || [[ "$commit" == *"feature:"* ]]; then
+              NEW_FEATURE=true
+            # 檢查 bug 修復 (PATCH bump)
+            elif [[ "$commit" =~ ^(fix|🐛|🔧|⚡).* ]] || [[ "$commit" == *"fix:"* ]] || [[ "$commit" == *"bugfix:"* ]]; then
+              BUG_FIX=true
+            fi
+          done <<< "$COMMITS"
+          
+          # 根據語義化版本規則計算新版本
+          if [ "$BREAKING_CHANGE" = true ]; then
+            # 破壞性變更：遞增 MAJOR，重置 MINOR 和 PATCH
+            NEW_MAJOR=$((MAJOR + 1))
+            NEW_MINOR=0
+            NEW_PATCH=0
+            VERSION_TYPE="MAJOR (Breaking Changes)"
+          elif [ "$NEW_FEATURE" = true ]; then
+            # 新功能：遞增 MINOR，重置 PATCH
+            NEW_MAJOR=$MAJOR
+            NEW_MINOR=$((MINOR + 1))
+            NEW_PATCH=0
+            VERSION_TYPE="MINOR (New Features)"
+          elif [ "$BUG_FIX" = true ]; then
+            # Bug 修復：遞增 PATCH
+            NEW_MAJOR=$MAJOR
+            NEW_MINOR=$MINOR
+            NEW_PATCH=$((PATCH + 1))
+            VERSION_TYPE="PATCH (Bug Fixes)"
+          else
+            # 其他變更：遞增 PATCH
+            NEW_MAJOR=$MAJOR
+            NEW_MINOR=$MINOR
+            NEW_PATCH=$((PATCH + 1))
+            VERSION_TYPE="PATCH (Other Changes)"
+          fi
+          
+          NEW_VERSION="v$NEW_MAJOR.$NEW_MINOR.$NEW_PATCH"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "version_type=$VERSION_TYPE" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION ($VERSION_TYPE)"
+
+      - name: Get commits since last tag
+        id: get-commits
+        run: |
+          LATEST_TAG="${{ steps.get-latest-tag.outputs.latest_tag }}"
+          if [ "$LATEST_TAG" = "v0.0.0" ]; then
+            # 如果是第一個 release，獲取所有 commits
+            COMMITS=$(git log --oneline --pretty=format:"%s" | head -20)
+          else
+            # 獲取自上次 tag 以來的 commits
+            COMMITS=$(git log ${LATEST_TAG}..HEAD --oneline --pretty=format:"%s")
+          fi
+          
+          # 將 commits 格式化為列表
+          COMMIT_LIST=""
+          while IFS= read -r line; do
+            if [ -n "$line" ]; then
+              if [ -n "$COMMIT_LIST" ]; then
+                COMMIT_LIST="${COMMIT_LIST}\n- ${line}"
+              else
+                COMMIT_LIST="- ${line}"
+              fi
+            fi
+          done <<< "$COMMITS"
+          
+          # 如果沒有新的 commits，使用默認信息
+          if [ -z "$COMMIT_LIST" ]; then
+            COMMIT_LIST="- Minor updates and improvements"
+          fi
+          
+          # 使用 EOF 來處理多行輸出
+          {
+            echo "commit_list<<EOF"
+            echo -e "$COMMIT_LIST"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+          echo "Commits: $COMMIT_LIST"
+
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW_VERSION="${{ steps.generate-version.outputs.new_version }}"
+          VERSION_TYPE="${{ steps.generate-version.outputs.version_type }}"
+          COMMIT_LIST="${{ steps.get-commits.outputs.commit_list }}"
+          
+          # 創建 release notes 文件
+          echo "## ${VERSION_TYPE}" > release_notes.md
+          echo "" >> release_notes.md
+          echo "## Changes" >> release_notes.md
+          echo "${COMMIT_LIST}" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "---" >> release_notes.md
+          echo "🚀 **Deployed to**: https://${{ github.repository_owner }}.github.io/cword" >> release_notes.md
+          
+          # 創建 release
+          gh release create "$NEW_VERSION" \
+            --title "Release $NEW_VERSION" \
+            --notes-file release_notes.md \
+            --latest
+
+      - name: Update deployment info
+        run: |
+          echo "✅ Successfully created release ${{ steps.generate-version.outputs.new_version }}"
+          echo "📦 Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ steps.generate-version.outputs.new_version }}"
+          echo "🚀 Deployed to: https://${{ github.repository_owner }}.github.io/cword"
