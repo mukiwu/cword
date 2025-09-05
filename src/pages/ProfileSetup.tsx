@@ -35,8 +35,12 @@ const styles = `
   .avatar-card.selected {
     transform: scale(1.1);
     box-shadow: 0 0 0 3px #D4AF37;
-    background: rgba(255, 255, 255, 0.5);
+    background: none;
     animation: bounce 0.5s ease;
+  }
+
+  .avatar-card.selected h4 {
+    color: #D4AF37;
   }
 
   @keyframes bounce {
@@ -249,7 +253,7 @@ const ProfileSetup: React.FC = () => {
           {/* Main Card */}
           <div className="parchment-bg rounded-3xl p-6 mb-6">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-neutral-50 mb-2">創建你的冒險檔案</h3>
+              <h3 className="text-2xl font-bold text-amber-400 mb-2">創建你的冒險檔案</h3>
               <p className="text-neutral-50">讓我們一起開始這段精彩的學習冒險！</p>
             </div>
             
@@ -331,7 +335,7 @@ const ProfileSetup: React.FC = () => {
                         />
                       </div>
                       <h4 className="font-semibold text-black text-sm">{avatar.name}</h4>
-                      <p className="text-yellow-700">{avatar.description}</p>
+                      <p className="text-amber-500">{avatar.description}</p>
                     </div>
                   ))}
                 </div>
