@@ -313,7 +313,7 @@ export class TaskGenerationService {
     const [minStroke, maxStroke] = content.strokeRange;
     
     // 基於年級筆畫標準的獎勵計算
-    let charReward = 3; // 基礎獎勵
+    let charReward = 5; // 基礎獎勵
     
     // 筆畫範圍適配獎勵
     if (strokes < minStroke) {
@@ -337,7 +337,7 @@ export class TaskGenerationService {
     // 六年級進階額外獎勵
     if (grade === 7) charReward += 1;
     
-    charReward = Math.min(charReward, 10);
+    charReward = Math.min(charReward, 8);
     
     tasks.push({
       id: uuidv4(),
@@ -391,7 +391,7 @@ export class TaskGenerationService {
   // 新增：估算字的筆劃數（擴展更多較難字詞）
   // 新增：計算詞語練習獎勵（考慮年級標準）
   private static async calculateWordReward(word: string, grade: number, strokeRange: [number, number]): Promise<number> {
-    let reward = 5; // 基礎獎勵（比單字高）
+    let reward = 7; // 基礎獎勵（最高，需書寫多字）
     
     // 計算詞語總筆畫數
     const totalStrokes = await this.getWordTotalStrokes(word);
@@ -413,12 +413,12 @@ export class TaskGenerationService {
     // 六年級進階額外獎勵
     if (grade === 7) reward += 1;
     
-    return Math.min(reward, 9); // 詞語練習上限 9
+    return Math.min(reward, 11); // 詞語練習上限 11
   }
 
   // 新增：計算造句練習獎勵（考慮年級標準）
   private static async calculatePhraseReward(phrase: string, grade: number, strokeRange: [number, number]): Promise<number> {
-    let reward = 6; // 基礎獎勵最高（認知難度最高）
+    let reward = 3; // 基礎獎勵（最低，只需造句不用書寫）
     
     // 評估詞語複雜度（根據長度和筆畫）
     const totalStrokes = await this.getWordTotalStrokes(phrase);
@@ -440,7 +440,7 @@ export class TaskGenerationService {
     // 六年級進階額外獎勵
     if (grade === 7) reward += 1;
     
-    return Math.min(reward, 10); // 造句練習上限 10
+    return Math.min(reward, 6); // 造句練習上限 6
   }
 
   // 獲取字的實際筆畫數（優先使用 hanzi-writer-data）
