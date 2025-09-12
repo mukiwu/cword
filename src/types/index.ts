@@ -28,6 +28,8 @@ export interface IWeeklyLedger {
   totalEarned: number;
   status: 'active' | 'paid_out';
   completedTaskIds: string[];
+  // 新增：是否已計入累積總額（避免重複計算）
+  isCountedInCumulative?: boolean;
 }
 
 export interface ICoinExchange {
