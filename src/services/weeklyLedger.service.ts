@@ -20,8 +20,41 @@ export class WeeklyLedgerService {
   }
 
   static async getCurrentWeekTotal(): Promise<number> {
-    const currentWeek = await this.getCurrentWeekLedger();
-    return currentWeek.totalEarned;
+    // 改為累積所有未結算的學習幣
+    return await this.getCumulativeUnpaidCoins();
+  }
+
+  /**
+   * 計算所有未結算週帳本的累積學習幣
+   */
+  static async getCumulativeUnpaidCoins(): Promise<number> {
+    const allLedgers = await DatabaseService.getAll<IWeeklyLedger>('weeklyLedger');
+    
+    // 只計算狀態為 'active' 的週帳本（未結算的）
+    const unpaidLedgers = allLedgers.filter(ledger => ledger.status === 'active');
+    
+    return unpaidLedgers.reduce((total, ledger) => total + ledger.totalEarned, 0);
+  }
+
+  /**
+   * 計算所有已結算週帳本的累積學習幣（可兌換的學習幣）
+   */
+  static async getTotalPaidOutCoins(): Promise<number> {
+    const allLedgers = await DatabaseService.getAll<IWeeklyLedger>('weeklyLedger');
+    
+    return allLedgers
+      .filter(ledger => ledger.status === 'paid_out')
+      .reduce((total, ledger) => total + ledger.totalEarned, 0);
+  }
+
+  /**
+   * 計算已兌換的學習幣總數
+   */
+  static async getTotalExchangedCoins(): Promise<number> {
+    const exchanges = this.getExchangeHistory();
+    return exchanges
+      .filter(ex => ex.status !== 'rejected')
+      .reduce((total, ex) => total + ex.coinsExchanged, 0);
   }
 
   static async getCurrentWeekLedger(): Promise<IWeeklyLedger> {
@@ -47,33 +80,49 @@ export class WeeklyLedgerService {
 
   static async performWeeklyPayout(): Promise<{ success: boolean; totalPaid: number; certificateData: any }> {
     try {
-      const currentWeek = await this.getCurrentWeekLedger();
+      // 獲取所有未結算的學習幣總額
+      const cumulativeTotal = await this.getCumulativeUnpaidCoins();
       
-      if (currentWeek.status === 'paid_out') {
-        throw new Error('This week has already been paid out');
+      if (cumulativeTotal === 0) {
+        throw new Error('No unpaid coins available for payout');
       }
 
       if (!this.isPayoutTimeValid()) {
         throw new Error('Payout is only available on Sunday after 8:00 PM');
       }
 
+      // 獲取所有未結算的週帳本
+      const allLedgers = await DatabaseService.getAll<IWeeklyLedger>('weeklyLedger');
+      const unpaidLedgers = allLedgers.filter(ledger => ledger.status === 'active');
+      
+      // 計算整體統計數據
+      const totalCompletedTasks = unpaidLedgers.reduce((total, ledger) => total + ledger.completedTaskIds.length, 0);
+      const oldestWeek = unpaidLedgers.reduce((oldest, current) => 
+        current.startDate < oldest.startDate ? current : oldest
+      );
+      const newestWeek = unpaidLedgers.reduce((newest, current) => 
+        current.startDate > newest.startDate ? current : newest
+      );
+
       const certificateData = {
-        weekId: currentWeek.id,
-        startDate: currentWeek.startDate,
-        endDate: new Date(currentWeek.startDate.getTime() + 6 * 24 * 60 * 60 * 1000),
-        totalEarned: currentWeek.totalEarned,
-        completedTasks: currentWeek.completedTaskIds.length,
+        totalWeeks: unpaidLedgers.length,
+        periodStart: oldestWeek.startDate,
+        periodEnd: new Date(newestWeek.startDate.getTime() + 6 * 24 * 60 * 60 * 1000),
+        totalEarned: cumulativeTotal,
+        completedTasks: totalCompletedTasks,
         generatedAt: new Date(),
       };
 
-      // Mark as paid out
-      await DatabaseService.update('weeklyLedger', currentWeek.id, {
-        status: 'paid_out' as const,
-      });
+      // 將所有未結算的週帳本標記為已結算
+      for (const ledger of unpaidLedgers) {
+        await DatabaseService.update('weeklyLedger', ledger.id, {
+          status: 'paid_out' as const,
+        });
+      }
 
       return {
         success: true,
-        totalPaid: currentWeek.totalEarned,
+        totalPaid: cumulativeTotal,
         certificateData,
       };
     } catch (error) {
@@ -151,7 +200,7 @@ export class WeeklyLedgerService {
   }
 
   // 兌換相關功能
-  static async requestCoinExchange(weekId: string, coinsToExchange: number): Promise<ICoinExchange> {
+  static async requestCoinExchange(coinsToExchange: number): Promise<ICoinExchange> {
     const EXCHANGE_RATE = 10; // 10 學習幣 = 1 NTD
     const ntdAmount = Math.floor(coinsToExchange / EXCHANGE_RATE);
     
@@ -159,27 +208,18 @@ export class WeeklyLedgerService {
       throw new Error('兌換金額不足，至少需要10個學習幣');
     }
 
-    // 移除每週只能兌換一次的限制
-
-    // 檢查週帳本是否存在且已完成
-    const weeklyLedger = await DatabaseService.get<IWeeklyLedger>('weeklyLedger', weekId);
-    if (!weeklyLedger || weeklyLedger.status !== 'paid_out') {
-      throw new Error('該週帳本尚未完成或不存在');
-    }
-
-    // 計算已兌換的學習幣總數
-    const existingExchanges = this.getExchangeHistory();
-    const alreadyExchanged = existingExchanges
-      .filter(ex => ex.weekId === weekId && ex.status !== 'rejected')
-      .reduce((total, ex) => total + ex.coinsExchanged, 0);
+    // 檢查是否有足夠的已結算學習幣
+    const availableCoins = await this.getTotalPaidOutCoins();
+    const totalAlreadyExchanged = await this.getTotalExchangedCoins();
+    const remainingCoins = availableCoins - totalAlreadyExchanged;
     
-    if (weeklyLedger.totalEarned < (alreadyExchanged + coinsToExchange)) {
-      throw new Error(`學習幣數量不足，可兌換: ${weeklyLedger.totalEarned - alreadyExchanged} 個`);
+    if (remainingCoins < coinsToExchange) {
+      throw new Error(`學習幣數量不足，可兌換: ${remainingCoins} 個`);
     }
 
     const exchange: ICoinExchange = {
       id: `exchange-${Date.now()}`,
-      weekId,
+      weekId: 'cumulative', // 標記為累積型兌換
       coinsExchanged: coinsToExchange,
       ntdAmount,
       exchangeRate: EXCHANGE_RATE,
@@ -249,17 +289,13 @@ export class WeeklyLedgerService {
     return weeklyLedger.totalEarned > alreadyExchanged;
   }
 
-  static async getAvailableCoinsForExchange(weekId: string): Promise<number> {
-    const weeklyLedger = await DatabaseService.get<IWeeklyLedger>('weeklyLedger', weekId);
-    if (!weeklyLedger || weeklyLedger.status !== 'paid_out') {
-      return 0;
-    }
+  /**
+   * 獲取可兌換的學習幣總數（已結算但未兌換的學習幣）
+   */
+  static async getAvailableCoinsForExchange(): Promise<number> {
+    const totalPaidOut = await this.getTotalPaidOutCoins();
+    const totalExchanged = await this.getTotalExchangedCoins();
     
-    const exchanges = this.getExchangeHistory();
-    const alreadyExchanged = exchanges
-      .filter(ex => ex.weekId === weekId && ex.status !== 'rejected')
-      .reduce((total, ex) => total + ex.coinsExchanged, 0);
-    
-    return Math.max(0, weeklyLedger.totalEarned - alreadyExchanged);
+    return Math.max(0, totalPaidOut - totalExchanged);
   }
 }
