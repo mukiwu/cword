@@ -116,6 +116,10 @@ const AdventurerCabin: React.FC = () => {
       const exchangeHistory = WeeklyLedgerService.getExchangeHistory();
       setExchanges(exchangeHistory.slice(0, 10)); // Show last 10 exchanges
 
+      // Get available coins for exchange using new cumulative system
+      const availableCoins = await WeeklyLedgerService.getAvailableCoinsForExchange();
+      setAvailableCoinsForExchange(availableCoins);
+
       // Check if it's payout time
       const now = new Date();
       const isPayoutTime = now.getDay() === 0 && now.getHours() >= 20;
@@ -150,24 +154,8 @@ const AdventurerCabin: React.FC = () => {
         return;
       }
 
-      // 找到最近已結算的週帳本
-      const paidOutWeeks = weeklyHistory.filter(w => w.status === 'paid_out');
-      if (paidOutWeeks.length === 0) {
-        setExchangeResult({ success: false, message: '沒有可兌換的學習幣' });
-        return;
-      }
-
-      // 選擇最近的已結算週帳本
-      const latestPaidWeek = paidOutWeeks[0];
-      
-      // 檢查是否還有可兌換的學習幣
-      const canExchange = await WeeklyLedgerService.canRequestExchange(latestPaidWeek.id);
-      if (!canExchange) {
-        setExchangeResult({ success: false, message: '沒有足夠的學習幣可兌換' });
-        return;
-      }
-
-      const exchange = await WeeklyLedgerService.requestCoinExchange(latestPaidWeek.id, exchangeAmount);
+      // 使用新的累積兌換系統
+      const exchange = await WeeklyLedgerService.requestCoinExchange(exchangeAmount);
       setExchangeResult({ 
         success: true, 
         exchange,
@@ -258,18 +246,10 @@ const AdventurerCabin: React.FC = () => {
     }
   };
 
+  const [availableCoinsForExchange, setAvailableCoinsForExchange] = useState(0);
+
   const getAvailableCoinsForExchange = () => {
-    const paidOutWeeks = weeklyHistory.filter(w => w.status === 'paid_out');
-    if (paidOutWeeks.length === 0) return 0;
-    
-    const latestWeek = paidOutWeeks[0];
-    
-    // 計算已兌換的學習幣總數 (不包括被拒絕的)
-    const alreadyExchanged = exchanges
-      .filter(ex => ex.weekId === latestWeek.id && ex.status !== 'rejected')
-      .reduce((total, ex) => total + ex.coinsExchanged, 0);
-    
-    return Math.max(0, latestWeek.totalEarned - alreadyExchanged);
+    return availableCoinsForExchange;
   };
 
   const isCurrentWeekSettleable = () => {
