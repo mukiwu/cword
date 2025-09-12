@@ -164,6 +164,7 @@ const AdventurerCabin: React.FC = () => {
         return;
       }
 
+      // 使用累積型學習幣系統進行兌換
       const exchange = await WeeklyLedgerService.requestCoinExchange(exchangeAmount);
       setExchangeResult({ 
         success: true, 
