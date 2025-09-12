@@ -150,24 +150,21 @@ const AdventurerCabin: React.FC = () => {
         return;
       }
 
-      // 找到最近已結算的週帳本
-      const paidOutWeeks = weeklyHistory.filter(w => w.status === 'paid_out');
-      if (paidOutWeeks.length === 0) {
-        setExchangeResult({ success: false, message: '沒有可兌換的學習幣' });
-        return;
-      }
-
-      // 選擇最近的已結算週帳本
-      const latestPaidWeek = paidOutWeeks[0];
-      
-      // 檢查是否還有可兌換的學習幣
-      const canExchange = await WeeklyLedgerService.canRequestExchange(latestPaidWeek.id);
+      // 檢查是否有可兌換的學習幣（累積型檢查）
+      const canExchange = await WeeklyLedgerService.canRequestExchange();
       if (!canExchange) {
         setExchangeResult({ success: false, message: '沒有足夠的學習幣可兌換' });
         return;
       }
 
-      const exchange = await WeeklyLedgerService.requestCoinExchange(latestPaidWeek.id, exchangeAmount);
+      // 檢查兌換金額是否超過可用額度
+      const availableCoins = await WeeklyLedgerService.getAvailableCoinsForExchange();
+      if (exchangeAmount > availableCoins) {
+        setExchangeResult({ success: false, message: `兌換金額超過可用額度，最多可兌換 ${availableCoins} 個學習幣` });
+        return;
+      }
+
+      const exchange = await WeeklyLedgerService.requestCoinExchange(exchangeAmount);
       setExchangeResult({ 
         success: true, 
         exchange,

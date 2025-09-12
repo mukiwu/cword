@@ -274,19 +274,12 @@ export class WeeklyLedgerService {
     localStorage.setItem(EXCHANGE_STORAGE_KEY, JSON.stringify(exchanges));
   }
 
-  static async canRequestExchange(weekId: string): Promise<boolean> {
-    // 移除每週只能兌換一次的限制，只要有足夠學習幣就可以兌換
-    const weeklyLedger = await DatabaseService.get<IWeeklyLedger>('weeklyLedger', weekId);
-    if (!weeklyLedger || weeklyLedger.status !== 'paid_out') {
-      return false;
-    }
-    
-    const exchanges = this.getExchangeHistory();
-    const alreadyExchanged = exchanges
-      .filter(ex => ex.weekId === weekId && ex.status !== 'rejected')
-      .reduce((total, ex) => total + ex.coinsExchanged, 0);
-    
-    return weeklyLedger.totalEarned > alreadyExchanged;
+  /**
+   * 檢查是否有可兌換的學習幣（累積型）
+   */
+  static async canRequestExchange(): Promise<boolean> {
+    const availableCoins = await this.getAvailableCoinsForExchange();
+    return availableCoins >= 10; // 最少需要 10 個學習幣才能兌換
   }
 
   /**
